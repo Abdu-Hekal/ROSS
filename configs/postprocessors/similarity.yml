@@ -1,0 +1,6 @@
+postprocessor:
+  name: similarity
+  APS_mode: False
+  postprocessor_args:
+    num_samples: 100
+    noise_magnitude: 0.01 
