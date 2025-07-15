@@ -3,7 +3,7 @@
 
 postprocessor:
   name: PROPostprocessor
-  APS_mode: True
+  APS_mode: False
 
   # --- Arguments for the PROPostprocessor ---
   postprocessor_args:
@@ -32,5 +32,5 @@ postprocessor:
   # The sweep for the base postprocessor (e.g., 'temperature' for temp_scaling)
   # is defined in its own YML file and will be combined automatically.
   # postprocessor_sweep:
-  #   noise_level: [0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.001]
+  #   noise_level: [0.00001,0.00005,0.0001,0.0005,0.001,0.005]
   #   gd_steps: [1,2,3,5]

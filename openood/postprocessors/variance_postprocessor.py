@@ -44,6 +44,7 @@ class VariancePostprocessor(BasePostprocessor):
 
         # attach metric labels
         self.metric_labels = [
+            'score_base',
             'score_mean',
             'score_median',
             'score_base_std_deviation',
@@ -51,7 +52,6 @@ class VariancePostprocessor(BasePostprocessor):
             'score_base_coefficient_of_variation_ratio',
             'score_base_interquartile_range',
             'score_final',
-            'score_final_alt_1',
             'score_min_max_95',
             'score_min_max_99',
         ]
@@ -83,14 +83,16 @@ class VariancePostprocessor(BasePostprocessor):
         with torch.no_grad():
             for batch in val_loader:
                 data = batch['data'].cuda()
-                # base and noisy scores
-                _, base_score = self.base_pp.postprocess(net, data)
-                scores = [base_score]
-                for _ in range(self.num_samples - 1):
-                    noisy_data = data + torch.normal(mean=torch.zeros_like(data), std=self.noise_magnitude)
-                    _, score_i = self.base_pp.postprocess(net, noisy_data)
-                    scores.append(score_i)
-                score_stack = torch.stack(scores, dim=0)
+                B = data.size(0)
+                S = self.num_samples
+                device = data.device
+                # vectorized noisy sampling for setup
+                data_rep = data.unsqueeze(0).expand(S, -1, -1, -1, -1)
+                noise = torch.randn_like(data_rep) * self.noise_magnitude
+                data_all = data_rep + noise
+                data_all_flat = data_all.reshape(-1, *data.shape[1:])
+                _, score_flat = self.base_pp.postprocess.__wrapped__(self.base_pp, net, data_all_flat)
+                score_stack = score_flat.view(S, B)
                 score_mean = score_stack.mean(dim=0)
                 score_std = torch.sqrt(score_stack.var(dim=0, unbiased=False))
                 score_cov = score_std / (score_mean + eps)
@@ -112,27 +114,18 @@ class VariancePostprocessor(BasePostprocessor):
 
     @torch.no_grad()
     def postprocess(self, net: nn.Module, data: Any):
-        # get base predictions and scores from selected postprocessor
-        preds, base_score = self.base_pp.postprocess.__wrapped__(self.base_pp, net, data)
-        # collect preds and scores from noisy samples
-        scores = [base_score]
-        
-        # collect logits and probability distributions for uncertainty metrics
-        output0 = net(data)
-        logit_list = [output0]
-        prob_list = [torch.softmax(output0, dim=1)]
-        
-        for _ in range(self.num_samples - 1):
-            noisy_data = data + torch.normal(mean=torch.zeros_like(data), std=self.noise_magnitude)
-            _, score_i = self.base_pp.postprocess.__wrapped__(self.base_pp, net, noisy_data)
-            scores.append(score_i)
-            # collect logits and probability distributions for uncertainty metrics
-            output_i = net(noisy_data)
-            logit_list.append(output_i)
-            prob_list.append(torch.softmax(output_i, dim=1))
-
-        # stack scores: (num_samples, batch_size)
-        score_stack = torch.stack(scores, dim=0).to(data.device)
+        # get clean predictions
+        preds, score_base = self.base_pp.postprocess.__wrapped__(self.base_pp, net, data)
+        B = data.size(0)
+        S = self.num_samples
+        device = data.device
+        # vectorized noisy sampling for inference
+        data_rep = data.unsqueeze(0).expand(S, -1, -1, -1, -1)
+        noise = torch.randn_like(data_rep) * self.noise_magnitude
+        data_all = data_rep + noise
+        data_all_flat = data_all.reshape(-1, *data.shape[1:])
+        _, score_flat = self.base_pp.postprocess.__wrapped__(self.base_pp, net, data_all_flat)
+        score_stack = score_flat.view(S, B).to(device)
         eps = 1e-12
 
         # 1. Score mean
@@ -166,15 +159,9 @@ class VariancePostprocessor(BasePostprocessor):
         q25 = torch.quantile(score_stack, 0.25, dim=0)
         score_interquartile_range = q75 - q25
 
-        # Alternative weighted geometric median score (base^(-base) * stability^base)
-        C = 1 / score_coefficient_of_variation
-        # We work in log-space to prevent explosion
-        log_C_stable = torch.log(C + eps)
-        log_score_median = torch.log(score_median + eps)
-
-        score_final_alt_1 = log_score_median * log_C_stable
 
         return preds, [
+            score_base,
             score_mean,
             score_median,
             -score_std_deviation,
@@ -182,7 +169,6 @@ class VariancePostprocessor(BasePostprocessor):
             score_median/(score_coefficient_of_variation+eps),
             score_median-score_interquartile_range,
             score_final,
-            score_final_alt_1,
             score_min_max_95,
             score_min_max_99,
         ]

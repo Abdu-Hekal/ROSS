@@ -129,11 +129,11 @@ def main():
         help="Foolbox attack method (e.g., FGSM, LinfPGD, DeepFool)" 
     ) 
     parser.add_argument( 
-        '--eps', type=float, default=0.03, 
+        '--eps', type=float, default=0.01, 
         help="Perturbation epsilon limit" 
     ) 
     parser.add_argument( 
-        '--steps', type=int, default=40, 
+        '--steps', type=int, default=20, 
         help="Number of steps for iterative attacks (if applicable)" 
     ) 
     parser.add_argument( 
@@ -147,6 +147,10 @@ def main():
     parser.add_argument(
         '--attack-base-pp', action='store_true',
         help="Attack the base postprocessor of a composite postprocessor instead of the full one"
+    )
+    parser.add_argument(
+        '--save-csv', action='store_true',
+        help="Save CSV summary of OOD metrics"
     )
     args = parser.parse_args() 
 
@@ -271,6 +275,18 @@ def main():
             row.append(f"{metrics_mean[i,j]:.2f} ± {metrics_std[i,j]:.2f}")
         final_metrics.append(row)
     df_final = pd.DataFrame(final_metrics, index=metrics_df.index, columns=metrics_df.columns)
+    if args.save_csv:
+        saving_root = os.path.join(args.root, 'attack_ood')
+        os.makedirs(saving_root, exist_ok=True)
+        csv_path = os.path.join(saving_root, f'{args.postprocessor}_{args.attack_method}.csv')
+        with open(csv_path, 'w') as f:
+            confs = df_final.index.get_level_values('conf').unique()
+            for conf in confs:
+                f.write(f"{conf or 'default'}\n")
+                df_conf = df_final.xs(conf, level='conf')
+                df_conf.to_csv(f)
+                f.write("\n")
+        print(f"Saved CSV metrics to {csv_path}")
     # print mean±std metrics per confidence method
     confs = df_final.index.get_level_values('conf').unique()
     for conf in confs:
