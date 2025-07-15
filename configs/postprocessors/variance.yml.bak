@@ -2,8 +2,8 @@ postprocessor:
   name: variance
   APS_mode: False
   postprocessor_args:
-    num_samples: 10
-    noise_magnitude: 0.00784313725
+    num_samples: 100
+    noise_magnitude: 0.031372549019608
     score_postprocessor: fdbd
     APS_score: score_min_max_95  
   # postprocessor_sweep:

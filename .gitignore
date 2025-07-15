@@ -170,3 +170,6 @@ local/
 
 # plot
 plots/
+
+# output
+scripts/experiments/outputs/
