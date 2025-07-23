@@ -96,7 +96,7 @@ class PROPostprocessor(BasePostprocessor):
         from a single flat list, as required by the APS framework.
         """
         param_names = list(self.args_dict.keys())
-        base_names = list(getattr(self.base_pp, 'args_dict', {}).keys())
+        base_names = list((getattr(self.base_pp, 'args_dict', {}) or {}).keys())
 
         # Assign PRO-specific hyperparameters
         for idx, name in enumerate(param_names):
@@ -120,7 +120,7 @@ class PROPostprocessor(BasePostprocessor):
         # A robust way to get hyperparams in the correct order
         hyperparams = []
         # Get current base params as a dictionary for easy lookup
-        base_param_keys = list(getattr(self.base_pp, 'args_dict', {}).keys())
+        base_param_keys = list((getattr(self.base_pp, 'args_dict', {}) or {}).keys())
         # Safely retrieve base postprocessor hyperparameters
         raw_base = self.base_pp.get_hyperparam() if hasattr(self.base_pp, 'get_hyperparam') else []
         # Normalize to list

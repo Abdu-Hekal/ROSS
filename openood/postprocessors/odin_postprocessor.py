@@ -7,6 +7,20 @@ import torch.nn as nn
 from .base_postprocessor import BasePostprocessor
 from openood.preprocessors.transform import normalization_dict
 
+# define a base postprocessor for ODIN that only applies temperature scaling
+class ODINBasePostprocessor(BasePostprocessor):
+    def __init__(self, config, temperature):
+        super().__init__(config)
+        self.temperature = temperature
+
+    @torch.no_grad()
+    def postprocess(self, net: nn.Module, data: Any):
+        output = net(data)
+        output = output / self.temperature
+        score = torch.softmax(output, dim=1)
+        conf, pred = torch.max(score, dim=1)
+        return pred, conf
+
 
 class ODINPostprocessor(BasePostprocessor):
     def __init__(self, config):
@@ -20,6 +34,8 @@ class ODINPostprocessor(BasePostprocessor):
         except KeyError:
             self.input_std = [0.5, 0.5, 0.5]
         self.args_dict = self.config.postprocessor.postprocessor_sweep
+        # expose underlying base postprocessor for attacks (only temperature scaling)
+        self.base_pp = ODINBasePostprocessor(config, self.temperature)
 
     def postprocess(self, net: nn.Module, data: Any):
         data.requires_grad = True

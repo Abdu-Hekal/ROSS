@@ -51,6 +51,7 @@ from .jacnorm_postprocessor import JacNormPostprocessor
 from .fdbd_jacnorm_postprocessor import FdbdJacNormPostprocessor
 from .deepfool_postprocessor import DeepfoolPostprocessor
 from .variance_postprocessor import VariancePostprocessor
+from .minmax_postprocessor import MinMaxPostprocessor
 from .play_postprocessor import PlayPostprocessor
 from .ratio_postprocessor import RatioPostprocessor
 from .similarity_postprocessor import SimilarityPostprocessor
@@ -114,6 +115,7 @@ def get_postprocessor(config: Config):
         'scale': ScalePostprocessor,
         'fdbd-jacnorm': FdbdJacNormPostprocessor,
         'variance': VariancePostprocessor,
+        'minmax': MinMaxPostprocessor,
         'similarity': SimilarityPostprocessor,
         'play': PlayPostprocessor,
         'ratio': RatioPostprocessor,

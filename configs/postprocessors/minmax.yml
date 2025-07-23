@@ -1,0 +1,7 @@
+postprocessor:
+  name: minmax
+  APS_mode: False
+  postprocessor_args:
+    num_samples: 10
+    noise_magnitude: 0.01
+    score_postprocessor: fdbd 

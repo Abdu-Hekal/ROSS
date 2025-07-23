@@ -173,3 +173,6 @@ plots/
 
 # output
 scripts/experiments/outputs/
+
+# models
+models/

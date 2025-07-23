@@ -33,6 +33,7 @@ class Evaluator:
         batch_size: int = 200,
         shuffle: bool = False,
         num_workers: int = 4,
+        robustbench=False,
     ) -> None:
         """A unified, easy-to-use API for evaluating (most) discriminative OOD
         detection methods.

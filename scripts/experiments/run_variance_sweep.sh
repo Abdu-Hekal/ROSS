@@ -12,8 +12,8 @@ POST="variance"
 PLOT=false
 
 # define hyperparameter sweeps
-NOISES=(0.00784313725 0.0156862745 0.031372549019608 0.06274509803921569)
-NUM_SAMPLES=(10 100)
+NOISES=(0.01) 
+NUM_SAMPLES=(100)
 
 # paths to config
 CFG_PATH="configs/postprocessors/variance.yml"
@@ -23,13 +23,8 @@ CFG_BAK="$CFG_PATH.bak"
 cp "$CFG_PATH" "$CFG_BAK"
 
 # output directory for CSVs
-OUTPUT_DIR="scripts/experiments/outputs"
+OUTPUT_DIR="scripts/experiments/outputs/variance_sweep"
 mkdir -p "$OUTPUT_DIR"
-
-# define master CSV for aggregation
-MASTER_CSV="$OUTPUT_DIR/${POST}_sweep.csv"
-# initialize (or truncate) master CSV
-> "$MASTER_CSV"
 
 for noise in "${NOISES[@]}"; do
   for samples in "${NUM_SAMPLES[@]}"; do
@@ -47,10 +42,8 @@ for noise in "${NOISES[@]}"; do
     # run evaluation
     python scripts/eval_ood.py --root "$ROOT" --save-csv --postprocessor "$POST" --plot-score "$PLOT"
 
-    # append this run to master CSV
-    echo "noise=${noise},samples=${samples}" >> "$MASTER_CSV"
-    cat "$ROOT/ood/${POST}.csv" >> "$MASTER_CSV"
-    echo "" >> "$MASTER_CSV"
+    # move and rename CSV
+    mv "$ROOT/ood/${POST}.csv" "$OUTPUT_DIR/${POST}_n${noise}_s${samples}.csv"
 
     echo "Completed run: noise=${noise}, samples=${samples}"
     echo "----------------------------------------"

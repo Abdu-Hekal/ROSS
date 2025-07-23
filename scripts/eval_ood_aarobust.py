@@ -32,7 +32,7 @@ parser.add_argument(
     type=str,
     default='cifar10',
     choices=['cifar10', 'cifar100', 'aircraft', 'cub', 'imagenet200','imagenet'])
-parser.add_argument('--batch-size', type=int, default=200)
+parser.add_argument('--batch-size', type=int, default=50)
 parser.add_argument('--save-csv', action='store_true')
 parser.add_argument('--save-score', action='store_true')
 parser.add_argument('--fsood', action='store_true')
