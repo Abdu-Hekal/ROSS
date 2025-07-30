@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Help with CUDA memory fragmentation
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
 # ensure script runs from project root
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 ROOT_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
@@ -12,8 +15,8 @@ POST="variance"
 PLOT=false
 
 # define hyperparameter sweeps
-NOISES=(0.01) 
-NUM_SAMPLES=(100)
+NOISES=(0.05) 
+NUM_SAMPLES=(25)
 
 # paths to config
 CFG_PATH="configs/postprocessors/variance.yml"
@@ -38,9 +41,8 @@ for noise in "${NOISES[@]}"; do
       sed -E -i "s/(noise_magnitude:).*/\1 ${noise}/" "$CFG_PATH"
       sed -E -i "s/(num_samples:).*/\1 ${samples}/" "$CFG_PATH"
     fi
-
     # run evaluation
-    python scripts/eval_ood.py --root "$ROOT" --save-csv --postprocessor "$POST" --plot-score "$PLOT"
+    python scripts/eval_ood.py --root "$ROOT" --save-csv --postprocessor "$POST" --plot-score "$PLOT" --batch-size 128
 
     # move and rename CSV
     mv "$ROOT/ood/${POST}.csv" "$OUTPUT_DIR/${POST}_n${noise}_s${samples}.csv"

@@ -7,14 +7,14 @@ ROOT_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
 cd "$ROOT_DIR"
 
 ATTACK_SCRIPT="scripts/attack_ood.py"
-ID="cifar10"
-ROOT="results/cifar10_resnet18_32x32_base_e100_lr0.1_default"
+ID="cifar100"
+ROOT="results/cifar100_resnet18_32x32_base_e100_lr0.1_default"
 SAVE_CSV="--save-csv"
-BATCH_SIZE=100
+BATCH_SIZE=32
 
-POSTS=() #(msp ebo gen fdbd odin)
-ATTACK_METHODS=FGSM #(FGSM LinfPGD DeepFool)
-EPSILONS=(0.007843137 0.0156862745 0.031372549 0.062745098)
+POSTS=() #(msp ebo gen fdbd)
+ATTACK_METHODS=(LinfPGD) #(FGSM LinfPGD DeepFool)
+EPSILONS=(0.007843137 0.0156862745 0.031372549 0.0627410098)
 OBJECTIVES=(min max)
 
 OUTPUT_BASE="scripts/experiments/outputs/attack_ood"
@@ -29,7 +29,7 @@ for pp in "${POSTS[@]}"; do
         rm -f "$ROOT/attack_ood/${pp}_${attack}.csv"
         python "$ATTACK_SCRIPT" --root "$ROOT" --id-data "$ID" \
           --postprocessor "$pp" --attack-method "$attack" --eps "$eps" \
-          --steps 20 --ood-objective "$obj" $SAVE_CSV --batch-size "$BATCH_SIZE"
+          --steps 40 --ood-objective "$obj" $SAVE_CSV --batch-size "$BATCH_SIZE" --reuse-attack
         mv "$ROOT/attack_ood/${pp}_${attack}.csv" \
            "$OUTPUT_BASE/${pp}_${attack}_eps${eps}_${obj}.csv"
       done
@@ -60,56 +60,59 @@ cp "$CONFIG_VAR" "$CONFIG_VAR_BAK"
 #       rm -f "$ROOT/attack_ood/pro_${attack}.csv"
 #       python "$ATTACK_SCRIPT" --root "$ROOT" --id-data "$ID" \
 #         --postprocessor pro --attack-method "$attack" --eps "$eps" \
-#         --steps 20 --ood-objective "$obj" --attack-base-pp $SAVE_CSV --batch-size "$BATCH_SIZE"
+#         --steps 40 --ood-objective "$obj" --attack-base-pp $SAVE_CSV --batch-size "$BATCH_SIZE" --reuse-attack
 #       mv "$ROOT/attack_ood/pro_${attack}.csv" \
 #          "$OUTPUT_BASE/pro_fdbd_${attack}_eps${eps}_${obj}.csv"
 #     done
 # done
 # done
 
-# Variance-FDBD attacks
-echo "Running Variance-FDBD attacks"
-NOISES=(0.01 0.1)
-for noise in "${NOISES[@]}"; do
-  if command -v yq >/dev/null 2>&1; then
-    yq e ".postprocessor.postprocessor_args.score_postprocessor = \"fdbd\" | \
-           .postprocessor.postprocessor_args.noise_magnitude = ${noise}" \
-           "$CONFIG_VAR_BAK" > "$CONFIG_VAR"
-  else
-    sed -E -i "s/(score_postprocessor:).*/\1 fdbd/" "$CONFIG_VAR"
-    sed -E -i "s/(noise_magnitude:).*/\1 ${noise}/" "$CONFIG_VAR"
-  fi
-  for attack in "${ATTACK_METHODS[@]}"; do
-    for eps in "${EPSILONS[@]}"; do
-      for obj in "${OBJECTIVES[@]}"; do
-        echo "Variance-FDBD, noise=$noise, attack=$attack, eps=$eps, obj=$obj"
-        rm -f "$ROOT/attack_ood/variance_${attack}.csv"
-        python "$ATTACK_SCRIPT" --root "$ROOT" --id-data "$ID" \
-          --postprocessor variance --attack-method "$attack" --eps "$eps" \
-          --steps 20 --ood-objective "$obj" --attack-base-pp $SAVE_CSV --batch-size "$BATCH_SIZE"
-        mv "$ROOT/attack_ood/variance_${attack}.csv" \
-           "$OUTPUT_BASE/variance_fdbd_noise${noise}_${attack}_eps${eps}_${obj}.csv"
+# Variance attacks
+echo "Running Variance attacks"
+BASE_PPS=(msp ebo gen)
+NOISES=(0.05)
+for base_pp in "${BASE_PPS[@]}"; do
+  for noise in "${NOISES[@]}"; do
+    if command -v yq >/dev/null 2>&1; then
+      yq e ".postprocessor.postprocessor_args.score_postprocessor = \"${base_pp}\" | \
+             .postprocessor.postprocessor_args.noise_magnitude = ${noise}" \
+             "$CONFIG_VAR_BAK" > "$CONFIG_VAR"
+    else
+      sed -E -i "s/(score_postprocessor:).*/\1 ${base_pp}/" "$CONFIG_VAR"
+      sed -E -i "s/(noise_magnitude:).*/\1 ${noise}/" "$CONFIG_VAR"
+    fi
+    for attack in "${ATTACK_METHODS[@]}"; do
+      for eps in "${EPSILONS[@]}"; do
+        for obj in "${OBJECTIVES[@]}"; do
+          echo "Variance-${base_pp}, noise=$noise, attack=$attack, eps=$eps, obj=$obj"
+          rm -f "$ROOT/attack_ood/variance_${attack}.csv"
+          python "$ATTACK_SCRIPT" --root "$ROOT" --id-data "$ID" \
+            --postprocessor variance --attack-method "$attack" --eps "$eps" \
+            --steps 40 --ood-objective "$obj" --attack-base-pp $SAVE_CSV --batch-size "$BATCH_SIZE"
+          mv "$ROOT/attack_ood/variance_${attack}.csv" \
+             "$OUTPUT_BASE/variance_${base_pp}_noise${noise}_${attack}_eps${eps}_${obj}.csv"
+        done
       done
-done
-done
-done
+    done
+  done
+
 done
 
 # ODIN-base attacks
-echo "Running ODIN base-PP attacks"
-for attack in "${ATTACK_METHODS[@]}"; do
-  for eps in "${EPSILONS[@]}"; do
-    for obj in "${OBJECTIVES[@]}"; do
-      echo "ODIN, attack=$attack, eps=$eps, obj=$obj"
-      rm -f "$ROOT/attack_ood/odin_${attack}.csv"
-      python "$ATTACK_SCRIPT" --root "$ROOT" --id-data "$ID" \
-        --postprocessor odin --attack-method "$attack" --eps "$eps" \
-        --steps 20 --ood-objective "$obj" --attack-base-pp $SAVE_CSV --batch-size "$BATCH_SIZE"
-      mv "$ROOT/attack_ood/odin_${attack}.csv" \
-         "$OUTPUT_BASE/odin_${attack}_eps${eps}_${obj}.csv"
-    done
-  done
-done
+# echo "Running ODIN base-PP attacks"
+# for attack in "${ATTACK_METHODS[@]}"; do
+#   for eps in "${EPSILONS[@]}"; do
+#     for obj in "${OBJECTIVES[@]}"; do
+#       echo "ODIN, attack=$attack, eps=$eps, obj=$obj"
+#       rm -f "$ROOT/attack_ood/odin_${attack}.csv"
+#       python "$ATTACK_SCRIPT" --root "$ROOT" --id-data "$ID" \
+#         --postprocessor odin --attack-method "$attack" --eps "$eps" \
+#         --steps 40 --ood-objective "$obj" --attack-base-pp $SAVE_CSV --batch-size "$BATCH_SIZE" --reuse-attack
+#       mv "$ROOT/attack_ood/odin_${attack}.csv" \
+#          "$OUTPUT_BASE/odin_${attack}_eps${eps}_${obj}.csv"
+#     done
+#   done
+# done
 
 # restore configs
 mv "$CONFIG_PRO_BAK" "$CONFIG_PRO"

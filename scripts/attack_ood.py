@@ -152,6 +152,10 @@ def main():
         '--save-csv', action='store_true',
         help="Save CSV summary of OOD metrics"
     )
+    parser.add_argument(
+        '--reuse-attacks', action='store_true',
+        help="Reuse saved adversarial examples if available instead of generating them anew"
+    )
     args = parser.parse_args() 
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -180,7 +184,7 @@ def main():
             postprocessor=None, 
             batch_size=args.batch_size, 
             shuffle=False, 
-            num_workers=4 
+            num_workers=8 
         ) 
         id_loader = evaluator.dataloader_dict['id']['test']
         # determine which postprocessor to attack
@@ -220,40 +224,48 @@ def main():
                     tasks.append((split, ds_name, ds_loader)) 
 
         attacked_data = {} 
-        for split, name, loader in tasks: 
-            adv_list, adv_label_list = [], [] 
-            for batch in tqdm(loader, desc=f"Attacking {split}/{name}"): 
-                images = batch['data'].to(device) 
-                labels = batch['label'].to(device) 
-                adv_label_list.append(labels.cpu()) 
-                # pick criterion: minimize ID or maximize OOD 
-                crit = crit_min if split == 'id' else crit_max 
-                try:
-                    adv_images, _, _ = attack(fmodel, images, crit, epsilons=args.eps)
-                except RuntimeError as e:
-                    msg = str(e)
-                    if 'does not require grad' in msg or 'does not have a grad_fn' in msg:
-                        raise RuntimeError(
-                            f"Attack method '{args.attack_method}' is gradient-based, but the postprocessor '{args.postprocessor}' output is not differentiable (no grad_fn). Please use a gradient-free attack or a postprocessor that supports autograd."
-                        ) from e
-                    else:
-                        raise
-                adv_list.append(torch.as_tensor(adv_images).cpu()) 
-            adv_data = torch.cat(adv_list, dim=0) 
-            adv_labels = torch.cat(adv_label_list, dim=0) 
-            attacked_data[(split, name)] = (adv_data, adv_labels) 
-            print(f"Generated {len(adv_data)} adversarial examples ({split}/{name})") 
-            save_fname = f"adv_{split}_{name}_{args.attack_method}.pt" 
-            save_path = os.path.join(subfolder, save_fname) 
-            torch.save(adv_data, save_path) 
-            print(f"Saved adversarial examples to {save_path}") 
+        for split, name, loader in tasks:
+            pp_name = args.postprocessor + ('_base' if args.attack_base_pp else '')
+            save_fname = f"adv_{pp_name}_{split}_{name}_{args.attack_method}_eps{args.eps}.pt"
+            save_path = os.path.join(subfolder, save_fname)
+            if args.reuse_attacks and os.path.isfile(save_path):
+                print(f"Loading adversarial examples from {save_path}")
+                adv_data = torch.load(save_path)
+                adv_label_list = []
+                for batch in tqdm(loader, desc=f"Loading labels {split}/{name}"):
+                    adv_label_list.append(batch['label'])
+                adv_labels = torch.cat(adv_label_list, dim=0)
+            else:
+                adv_list, adv_label_list = [], []
+                for batch in tqdm(loader, desc=f"Attacking {split}/{name}"):
+                    images = batch['data'].to(device)
+                    labels = batch['label'].to(device)
+                    adv_label_list.append(labels.cpu())
+                    crit = crit_min if split == 'id' else crit_max
+                    try:
+                        adv_images, _, _ = attack(fmodel, images, crit, epsilons=args.eps)
+                    except RuntimeError as e:
+                        msg = str(e)
+                        if 'does not require grad' in msg or 'does not have a grad_fn' in msg:
+                            raise RuntimeError(
+                                f"Attack method '{args.attack_method}' is gradient-based, but the postprocessor '{args.postprocessor}' output is not differentiable (no grad_fn). Please use a gradient-free attack or a postprocessor that supports autograd."
+                            ) from e
+                        else:
+                            raise
+                    adv_list.append(torch.as_tensor(adv_images).cpu())
+                adv_data = torch.cat(adv_list, dim=0)
+                adv_labels = torch.cat(adv_label_list, dim=0)
+                print(f"Generated {len(adv_data)} adversarial examples ({split}/{name})")
+                torch.save(adv_data, save_path)
+                print(f"Saved adversarial examples to {save_path}")
+            attacked_data[(split, name)] = (adv_data, adv_labels)
 
         # Evaluate adversarial examples using unified eval_ood methodology
         print('\n=== Evaluating OOD metrics ===', flush=True)
         for (split, name), (adv_data, adv_labels) in attacked_data.items():
             ds_adv = DictDataset(adv_data, adv_labels)
             loader_adv = DataLoader(ds_adv, batch_size=args.batch_size,
-                                    shuffle=False, num_workers=4)
+                                    shuffle=False, num_workers=8)
             pred_adv, conf_adv, label_adv = evaluator.postprocessor.inference(
                 evaluator.net, loader_adv, progress=True)
             if split == 'id':

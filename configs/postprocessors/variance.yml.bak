@@ -1,8 +1,8 @@
 postprocessor:
   name: variance
-  APS_mode: False
+  APS_mode: True
   postprocessor_args:
     num_samples: 25
-    noise_magnitude: 0.1
-    score_postprocessor: fdbd
-    APS_score: score_min_max_95_alt_5
+    noise_magnitude: 0.05
+    score_postprocessor: gen
+    APS_score: score_min_max_95_alt_6_median

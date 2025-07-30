@@ -11,8 +11,8 @@ PY_SCRIPT="scripts/eval_ood.py"
 IMG_SCRIPT="scripts/eval_ood_imagenet.py"
 CONFIG="configs/postprocessors/variance.yml"
 CONFIG_BAK="${CONFIG}.bak"
-BENCHES=(cifar10 cifar100 imagenet200 imagenet1k)
-BASE_PPS=(msp temp_scaling gen fdbd)
+BENCHES=(cifar10 cifar100)
+BASE_PPS=(gen msp)
 SAVE_CSV="--save-csv"
 PLOT_SCORE=false
 
@@ -24,18 +24,10 @@ mkdir -p "$OUTPUT_BASE"
 
 for bench in "${BENCHES[@]}"; do
   echo "Benchmark: $bench"
-  if [[ "$bench" == "imagenet1k" ]]; then
-    # ImageNet-1k evaluation
-    SCRIPT="$IMG_SCRIPT"
-    ROOT=$(ls results/imagenet_resnet50_tvsv*_base_default | head -n1)
-    CMD="python $SCRIPT --tvs-pretrained --postprocessor $POST --save-csv"
-    SRC_DIR="$ROOT/ood"
-  else
-    SCRIPT="$PY_SCRIPT"
-    ROOT=$(ls results/${bench}_* | head -n1)
-    CMD="python $SCRIPT --root $ROOT --id-data $bench --postprocessor $POST $SAVE_CSV --plot-score $PLOT_SCORE"
-    SRC_DIR="$ROOT/ood"
-  fi
+  SCRIPT="$PY_SCRIPT"
+  ROOT=$(ls -d results/${bench}_* | head -n1)
+  CMD="python $SCRIPT --root $ROOT --id-data $bench --postprocessor $POST $SAVE_CSV --plot-score $PLOT_SCORE --batch-size 64"
+  SRC_DIR="$ROOT/ood"
 
   OUT_DIR="$OUTPUT_BASE/$bench"
   mkdir -p "$OUT_DIR"

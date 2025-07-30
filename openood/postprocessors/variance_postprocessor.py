@@ -52,33 +52,38 @@ class VariancePostprocessor(BasePostprocessor):
         self.args_dict.update(base_sweep)
 
         # attach metric labels
-        self.metric_labels = [
-            'score_mean',
-            'score_median',
-            'score_base_std_deviation',
-            'score_base_coefficient_of_variation',
-            'score_base_coefficient_of_variation_ratio',
-            'score_base_interquartile_range',
-            'score_final',
-            'score_final_alt_1',
-            'score_min_max_95',
-            'score_min_max_95_alt_1',
-            'score_min_max_95_alt_2',
-            'score_min_max_95_alt_3',
-            'score_min_max_95_alt_4',
-            'score_min_max_95_alt_5',
-            'score_min_max_95_alt_6',
-            'score_min_max_95_alt_7',
-            'score_min_max_95_alt_8',
-            'score_min_max_sigmoid',
-            'score_harmonic',
-            'score_harmonic_alt',
-            'score_harmonic_basic',
-            'score_min_max_dref',
-        ]
         # Initialize gating (w) and adjustment (lambda_) hyperparameters
         self.w = 0.5
         self.lambda_ = 5.0
+
+        # placeholders for median and MAD-based hyperparameters
+        self.score_95_median = None
+        self.d_ref_mad = None
+        self.w_median = 0.5
+        self.lambda_mad = 5.0
+
+        # replace static metric_labels with dynamic doubling
+        self.metric_labels = [
+            'score_mean', 'score_median',
+            'score_base_std_deviation', 'score_base_mad',
+            'score_base_coefficient_of_variation', 'score_base_mad_cov',    
+            'score_base_coefficient_of_variation_ratio', 'score_base_mad_cov_ratio',
+            'score_base_interquartile_range', 'score_base_median_interquartile_range',
+            'score_final', 'score_final_median', 
+            'score_min_max_95', 'score_min_max_95_median',
+            'score_min_max_95_alt_1', 'score_min_max_95_alt_1_median',
+            'score_min_max_95_alt_2', 'score_min_max_95_alt_2_median',  
+            'score_min_max_95_alt_3', 'score_min_max_95_alt_3_median',  
+            'score_min_max_95_alt_4', 'score_min_max_95_alt_4_median',          
+            'score_min_max_95_alt_5', 'score_min_max_95_alt_5_median',                          
+            'score_min_max_95_alt_6', 'score_min_max_95_alt_6_median',                              
+            'score_min_max_95_alt_7', 'score_min_max_95_alt_7_median',
+            'score_min_max_95_alt_8', 'score_min_max_95_alt_8_median',
+            'score_min_max_sigmoid', 'score_min_max_sigmoid_median',
+            'score_harmonic', 'score_harmonic_median',
+            'score_harmonic_basic', 'score_harmonic_basic_median',  
+        ]
+        # Initialize gating (w) and adjustment (lambda_) hyperparameters
         # placeholders for center and reference disagreement score (to be computed in setup)
         self.score_centre = None
         self.score_95 = None
@@ -99,6 +104,8 @@ class VariancePostprocessor(BasePostprocessor):
             raise ValueError("ID validation loader 'val' not found in id_loader_dict")
         score_means = []
         d_vals = []
+        score_medians_list = []
+        d_vals_mad = []
         eps = 1e-12
         net.eval()
         with torch.no_grad():
@@ -120,24 +127,35 @@ class VariancePostprocessor(BasePostprocessor):
                 score_mean = score_stack.mean(dim=0)
                 score_std = torch.sqrt(score_stack.var(dim=0, unbiased=False))
                 score_cov = score_std / (score_mean + eps)
+                # compute median and MAD-based disagreement
+                score_median_batch = score_stack.median(dim=0).values
+                score_mad_batch = torch.mean(torch.abs(score_stack - score_median_batch), dim=0)
+                med_mad_cov = score_mad_batch / (score_median_batch + eps)
+                # collect statistics
                 score_means.extend(score_mean.cpu().tolist())
                 d_vals.extend(score_cov.cpu().tolist())
+                score_medians_list.extend(score_median_batch.cpu().tolist())
+                d_vals_mad.extend(med_mad_cov.cpu().tolist())
 
         # set hyperparameters based on ID validation statistics
         self.score_95 = float(np.quantile(np.array(score_means), 0.05))
-        self.d_ref = float(np.quantile(np.array(d_vals), 0.05)) #float(np.mean(np.array(d_vals)))
+        self.d_ref = float(np.quantile(np.array(d_vals), 0.05))
+        self.score_95_median = float(np.quantile(np.array(score_medians_list), 0.05))
+        self.d_ref_mad = float(np.quantile(np.array(d_vals_mad), 0.05))
 
-        # Compute gating width (w) and adjustment scale (lambda_) from validation set
+        # Compute gating width (w) and median gating width for MAD branch
         score_means_arr = np.array(score_means)
-        d_vals_arr = np.array(d_vals)
-        stab_base_arr = 1.0 - d_vals_arr / (self.d_ref + eps)
-        # Set gating width to std of score means
+        score_medians_arr = np.array(score_medians_list)
         self.w = float(np.std(score_means_arr))
-        # Set lambda as ratio of std of base scores to std of stability adjustment
-        self.lambda_ = float(np.std(score_means_arr) / (np.std(stab_base_arr) + eps))
-        # set lambda as ratio of std of base scores to mean of base scores
-        self.lambda_ = float(np.std(score_means_arr) / (np.mean(score_means_arr) + eps))
+        self.w_median = float(np.std(score_medians_arr))
+        # adjustment scales
         self.lambda_ = 0.1
+        self.lambda_mad = 0.1
+
+        # If there are no hyperparameters to search, skip APS search
+        if not self.args_dict:
+            print("No hyperparameters to search, skipping APS search")
+            self.hyperparam_search_done = True
     @torch.no_grad()
     def postprocess(self, net: nn.Module, data: Any):
         # Vectorized computation of scores and predictions for noisy samples
@@ -166,14 +184,24 @@ class VariancePostprocessor(BasePostprocessor):
         score_std_deviation = torch.sqrt(score_variance)
         # 4. Score coefficient of variation
         score_coefficient_of_variation = score_std_deviation / (score_mean + eps)
+        # compute MAD-based variation (mean absolute deviation from median)
+        score_mad = torch.mean(torch.abs(score_stack - score_median), dim=0)
+        score_mad_cov = score_mad / (score_median + eps)
+        # insert base MAD after std deviation
+        score_base_mad = score_mad
         #score radius
         score_radius = torch.max(score_stack, dim=0).values - torch.min(score_stack, dim=0).values
 
-        # Compute final score with sigmoid gating and stability adjustment
+        # Compute final score with sigmoid gating and stability adjustment (mean/std)
         sigma_input = (score_mean - self.score_95) / self.w
         gate = torch.sigmoid(sigma_input)
         stability_adj = self.lambda_ * (1.0 - score_coefficient_of_variation / (self.d_ref + eps))
         score_final = score_mean + gate * stability_adj
+        # Compute median/MAD-based final score
+        sigma_input_med = (score_median - self.score_95_median) / self.w_median
+        gate_med = torch.sigmoid(sigma_input_med)
+        stability_adj_med = self.lambda_mad * (1.0 - score_mad_cov / (self.d_ref_mad + eps))
+        score_final_mad = score_median + gate_med * stability_adj_med
 
         # Compute min-max blended score: min(S_base, center) + max(0, S_base - center)*(1/C)
         stab = 1/(score_coefficient_of_variation+eps)
@@ -198,9 +226,10 @@ class VariancePostprocessor(BasePostprocessor):
         score_min_max_95_alt_6 = min_part + pos_diff * (1+0.01 * stab_alt)
         # Alternative min-max blended score
         stab_alt = 1/(score_std_deviation+eps)
-        score_min_max_95_alt_7 = score_mean + (0.005 * stab_alt)
+        score_min_max_95_alt_7 = min_part + pos_diff * (1+0.02 * stab_alt)
         # Alternative min-max blended score
-        score_min_max_95_alt_8 = min_part + (0.005 * stab_alt)
+        stab_alt = 1/(score_std_deviation+eps)
+        score_min_max_95_alt_8 = min_part + pos_diff * (1+0.05 * stab_alt)
 
         # Sigmoid-gated min-max blended score
         g_sig = torch.sigmoid((score_mean - self.score_95)/(self.w + eps))
@@ -208,15 +237,9 @@ class VariancePostprocessor(BasePostprocessor):
         # Harmonic mean score: combine confidence and stability
         stability_ratio = self.lambda_ * score_mean/(score_coefficient_of_variation+eps)
         score_harmonic = 2*(score_mean * stability_ratio)/(score_mean + stability_ratio + eps)
-        score_harmonic_alt = (score_mean**2)/(10*score_std_deviation+score_mean)
         # Harmonic mean score: combine confidence and stability
         stability = 1/(score_std_deviation+eps)
         score_harmonic_basic = (score_mean * stability)/(score_mean + stability + eps)
-        # d_ref-based min-max blended score using center threshold
-        stab_dref = 1.0 - score_coefficient_of_variation / (self.d_ref + eps)
-        min_part_dref = torch.clamp(score_mean, max=self.score_95)
-        pos_diff_dref = torch.clamp(score_mean - self.score_95, min=0.0)
-        score_min_max_dref = score_mean + pos_diff_dref * (1+0.01*stab_dref)
         
 
 
@@ -226,36 +249,59 @@ class VariancePostprocessor(BasePostprocessor):
         score_interquartile_range = q75 - q25
 
         # Alternative weighted geometric median score (base^(-base) * stability^base)
-        C = 1 / score_coefficient_of_variation
-        # We work in log-space to prevent explosion
-        log_C_stable = torch.log(C + eps)
-        log_score_mean = torch.log(score_mean + eps)
+        # C = 1 / score_coefficient_of_variation
+        # # We work in log-space to prevent explosion
+        # log_C_stable = torch.log(C + eps)
+        # log_score_mean = torch.log(score_mean + eps)
 
-        score_final_alt_1 = log_score_mean * log_C_stable
-
+        # score_final_alt_1 = log_score_mean * log_C_stable
+        # Median/MAD variant of weighted geometric median score
+        # C_mad = 1 / score_mad_cov
+        # log_C_stable_mad = torch.log(C_mad + eps)
+        # log_score_median = torch.log(score_median + eps)
+        # score_final_alt_1_mad = log_score_median * log_C_stable_mad
+        # Prepare median/MAD composite variables
+        min_part_mad = torch.clamp(score_median, max=self.score_95_median)
+        pos_diff_mad = torch.clamp(score_median - self.score_95_median, min=0.0)
+        stab_mad = 1/(score_mad_cov + eps)
+        stab_alt_mad = 1/(score_mad + eps)
+        g_sig_med = torch.sigmoid((score_median - self.score_95_median)/(self.w_median + eps))
+        # Median/MAD min-max blended scores
+        score_min_max_95_mad = score_median + pos_diff_mad * 0.01 * stab_mad
+        score_min_max_95_alt_1_mad = score_median + pos_diff_mad * (1+0.001 * stab_alt_mad)
+        score_min_max_95_alt_2_mad = score_median + pos_diff_mad * (1+0.003 * stab_alt_mad)
+        score_min_max_95_alt_3_mad = score_median + pos_diff_mad * (1+0.005 * stab_alt_mad)
+        score_min_max_95_alt_4_mad = min_part_mad + pos_diff_mad * (1+0.005 * stab_alt_mad)
+        score_min_max_95_alt_5_mad = score_median + pos_diff_mad * (1+0.01 * stab_alt_mad)
+        score_min_max_95_alt_6_mad = min_part_mad + pos_diff_mad * (1+0.01 * stab_alt_mad)
+        score_min_max_95_alt_7_mad = min_part_mad + pos_diff_mad * (1+0.02 * stab_alt_mad)
+        score_min_max_95_alt_8_mad = min_part_mad + pos_diff_mad * (1+0.05 * stab_alt_mad)
+        # Median/MAD sigmoid-gated min-max blended score
+        score_min_max_sigmoid_mad = min_part_mad + pos_diff_mad * g_sig_med * self.lambda_mad * stab_mad
+        # Median/MAD harmonic mean scores
+        stability_ratio_mad = self.lambda_mad * score_median/(score_mad_cov + eps)
+        score_harmonic_mad = 2*(score_median * stability_ratio_mad)/(score_median + stability_ratio_mad + eps)
+        stability_mad_basic = 1/(score_mad + eps)
+        score_harmonic_basic_mad = (score_median * stability_mad_basic)/(score_median + stability_mad_basic + eps)
         return preds, [
-            score_mean,
-            score_median,
-            -score_std_deviation,
-            -score_coefficient_of_variation,
-            score_mean/(score_coefficient_of_variation+eps),
-            score_mean-score_interquartile_range,
-            score_final,
-            score_final_alt_1,
-            score_min_max_95,
-            score_min_max_95_alt_1,
-            score_min_max_95_alt_2,
-            score_min_max_95_alt_3,
-            score_min_max_95_alt_4,
-            score_min_max_95_alt_5,
-            score_min_max_95_alt_6,
-            score_min_max_95_alt_7,
-            score_min_max_95_alt_8,
-            score_min_max_sigmoid,
-            score_harmonic,
-            score_harmonic_alt,
-            score_harmonic_basic,
-            score_min_max_dref,
+            score_mean, score_median,
+            -score_std_deviation, -score_mad,
+            -score_coefficient_of_variation, -score_mad_cov,
+            score_mean/(score_coefficient_of_variation+eps), score_median/(score_mad_cov+eps),
+            score_mean-score_interquartile_range, score_median-score_mad,
+            score_final, score_final_mad,
+            score_min_max_95, score_min_max_95_mad,
+            score_min_max_95_alt_1, score_min_max_95_alt_1_mad,
+            score_min_max_95_alt_2, score_min_max_95_alt_2_mad,
+            score_min_max_95_alt_3, score_min_max_95_alt_3_mad,
+            score_min_max_95_alt_4, score_min_max_95_alt_4_mad,
+            score_min_max_95_alt_5, score_min_max_95_alt_5_mad,
+            score_min_max_95_alt_6, score_min_max_95_alt_6_mad,
+            score_min_max_95_alt_7, score_min_max_95_alt_7_mad,
+            score_min_max_95_alt_8, score_min_max_95_alt_8_mad,
+            score_min_max_sigmoid, score_min_max_sigmoid_mad,
+            score_harmonic, score_harmonic_mad,
+            score_harmonic_basic, score_harmonic_basic_mad,
         ]
 
     def set_hyperparam(self, hyperparam: list):
