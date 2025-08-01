@@ -176,3 +176,8 @@ scripts/experiments/outputs/
 
 # models
 models/
+
+# figures
+figures/
+plots/
+plots_fdbd/

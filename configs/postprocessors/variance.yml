@@ -3,6 +3,6 @@ postprocessor:
   APS_mode: True
   postprocessor_args:
     num_samples: 25
-    noise_magnitude: 0.05
-    score_postprocessor: msp
+    noise_magnitude: 0.1
+    score_postprocessor: fdbd
     APS_score: score_min_max_95_alt_6_median

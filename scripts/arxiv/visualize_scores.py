@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument('--config-root', type=str, default=os.path.join(ROOT_DIR, 'configs'), help='Root directory for config files')
     parser.add_argument('--postprocessor', type=str, default='variance', help='Name of postprocessor (must be variance)')
     parser.add_argument('--ood-split', type=str, choices=['near', 'far'], default='near', help='OOD split to sample from')
-    parser.add_argument('--n-samples', type=int, default=5, help='Number of samples per dataset')
+    parser.add_argument('--n-samples', type=int, default=10, help='Number of samples per dataset')
     parser.add_argument('--shuffle', action='store_true', help='Shuffle datasets when sampling')
     parser.add_argument('--batch-size', type=int, default=50, help='Batch size for sampling')
     parser.add_argument('--num-workers', type=int, default=4, help='Number of workers for DataLoader')
@@ -139,7 +139,7 @@ def main():
             y_vals = stats[metric_idx]
             if x_vals:
                 ax.scatter(x_vals, y_vals, label=ds)
-        x_label = metric_labels[0]
+        x_label = metric_labels[1]
         y_label = metric_labels[metric_idx]
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)

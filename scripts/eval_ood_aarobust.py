@@ -15,6 +15,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Monkey patch torch.load for robustbench compatibility with PyTorch 2.6+
+original_torch_load = torch.load
+def patched_torch_load(*args, **kwargs):
+    if 'weights_only' not in kwargs:
+        kwargs['weights_only'] = False
+    return original_torch_load(*args, **kwargs)
+torch.load = patched_torch_load
+
 from openood.evaluation_api import Evaluator
 
 from robustbench.utils import load_model
@@ -32,7 +40,7 @@ parser.add_argument(
     type=str,
     default='cifar10',
     choices=['cifar10', 'cifar100', 'aircraft', 'cub', 'imagenet200','imagenet'])
-parser.add_argument('--batch-size', type=int, default=50)
+parser.add_argument('--batch-size', type=int, default=100)
 parser.add_argument('--save-csv', action='store_true')
 parser.add_argument('--save-score', action='store_true')
 parser.add_argument('--fsood', action='store_true')
@@ -147,4 +155,3 @@ if args.save_csv:
     if not os.path.exists(saving_root):
         os.makedirs(saving_root)
     metrics.to_csv(os.path.join(saving_root,csv_filename),float_format='{:.2f}'.format)
-

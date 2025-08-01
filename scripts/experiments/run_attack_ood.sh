@@ -7,14 +7,14 @@ ROOT_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
 cd "$ROOT_DIR"
 
 ATTACK_SCRIPT="scripts/attack_ood.py"
-ID="cifar100"
-ROOT="results/cifar100_resnet18_32x32_base_e100_lr0.1_default"
+ID="cifar10"
+ROOT="results/cifar10_resnet18_32x32_base_e100_lr0.1_default"
 SAVE_CSV="--save-csv"
-BATCH_SIZE=32
+BATCH_SIZE=128
 
 POSTS=() #(msp ebo gen fdbd)
 ATTACK_METHODS=(LinfPGD) #(FGSM LinfPGD DeepFool)
-EPSILONS=(0.007843137 0.0156862745 0.031372549 0.0627410098)
+EPSILONS=(0.007843137 0.0156862745) #0.031372549 0.0627410098
 OBJECTIVES=(min max)
 
 OUTPUT_BASE="scripts/experiments/outputs/attack_ood"
@@ -69,8 +69,8 @@ cp "$CONFIG_VAR" "$CONFIG_VAR_BAK"
 
 # Variance attacks
 echo "Running Variance attacks"
-BASE_PPS=(msp ebo gen)
-NOISES=(0.05)
+BASE_PPS=(fdbd)
+NOISES=(0.25 0.5)
 for base_pp in "${BASE_PPS[@]}"; do
   for noise in "${NOISES[@]}"; do
     if command -v yq >/dev/null 2>&1; then
@@ -88,7 +88,7 @@ for base_pp in "${BASE_PPS[@]}"; do
           rm -f "$ROOT/attack_ood/variance_${attack}.csv"
           python "$ATTACK_SCRIPT" --root "$ROOT" --id-data "$ID" \
             --postprocessor variance --attack-method "$attack" --eps "$eps" \
-            --steps 40 --ood-objective "$obj" --attack-base-pp $SAVE_CSV --batch-size "$BATCH_SIZE"
+            --steps 40 --ood-objective "$obj" --attack-base-pp $SAVE_CSV --batch-size "$BATCH_SIZE" --reuse-attack
           mv "$ROOT/attack_ood/variance_${attack}.csv" \
              "$OUTPUT_BASE/variance_${base_pp}_noise${noise}_${attack}_eps${eps}_${obj}.csv"
         done

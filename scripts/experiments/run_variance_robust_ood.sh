@@ -13,12 +13,12 @@ CONFIG_BAK="${CONFIG}.bak"
 BENCHES=(cifar10 cifar100 imagenet200)
 BASE_PPS=fdbd
 MODELIDS=(
-  'Diffenderfer2021Winning_LRR_CARD_Deck',
-  'Diffenderfer2021Winning_LRR',
-  'Diffenderfer2021Winning_Binary_CARD_Deck',
-  'Kireev2021Effectiveness_RLATAugMix',
-  'Modas2021PRIMEResNet18',
-  'Hendrycks2020AugMix_WRN',
+  'Diffenderfer2021Winning_LRR_CARD_Deck'
+  'Diffenderfer2021Winning_LRR'
+  'Diffenderfer2021Winning_Binary_CARD_Deck'
+  'Kireev2021Effectiveness_RLATAugMix'
+  'Modas2021PRIMEResNet18'
+  'Hendrycks2020AugMix_WRN'
 )
 
 # backup original config
