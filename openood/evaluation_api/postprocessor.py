@@ -19,7 +19,7 @@ from openood.postprocessors import (
     AdaScalePostprocessor, IODINPostprocessor, NCIPostprocessor,
     FdbdJacNormPostprocessor, DeepfoolPostprocessor,
     VariancePostprocessor, PlayPostprocessor, SimilarityPostprocessor,
-    RatioPostprocessor, PROPostprocessor, MinMaxPostprocessor)
+    RatioPostprocessor, PROPostprocessor, MinMaxPostprocessor, ROSSPostprocessor)
 from openood.utils.config import Config, merge_configs
 
 postprocessors = {
@@ -80,6 +80,7 @@ postprocessors = {
     'ratio': RatioPostprocessor,
     'pro': PROPostprocessor,
     'minmax': MinMaxPostprocessor,
+    'ross': ROSSPostprocessor,
 }
 
 link_prefix = 'https://raw.githubusercontent.com/Jingkang50/OpenOOD/main/configs/postprocessors/'

@@ -57,6 +57,7 @@ from .ratio_postprocessor import RatioPostprocessor
 from .similarity_postprocessor import SimilarityPostprocessor
 from .adascale_postprocessor import AdaScalePostprocessor
 from .pro_postprocessor import PROPostprocessor
+from .ross_postprocessor import ROSSPostprocessor
 
 def get_postprocessor(config: Config):
     postprocessors = {
@@ -120,6 +121,7 @@ def get_postprocessor(config: Config):
         'play': PlayPostprocessor,
         'ratio': RatioPostprocessor,
         'pro': PROPostprocessor,
+        'ross': ROSSPostprocessor,
     }
 
     return postprocessors[config.postprocessor.name](config)
