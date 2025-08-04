@@ -12,19 +12,6 @@ import yaml
 import torch
 import numpy as np
 import os
-import random
-
-# Global random seed for reproducibility
-SEED = 1
-random.seed(SEED)
-np.random.seed(SEED)
-torch.manual_seed(SEED)
-torch.cuda.manual_seed_all(SEED)
-# Set environment variable for child processes
-os.environ['PYTHONHASHSEED'] = str(SEED)
-# Force deterministic algorithms in PyTorch
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
 from openood.networks import ResNet18_32x32
 from openood.evaluation_api.postprocessor import get_postprocessor
 

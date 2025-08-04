@@ -86,6 +86,7 @@ results/cifar10_resnet18_32x32_base_e100_lr0.1_default/attack_ood/ross_LinfPGD.c
 ```
 
 ### 3) Automated Experiments with `run_experiments.py`
+**Note:** The results produced by `run_experiments.py` may vary slightly due to random noise in the post-processing steps. Variation tends to decrease when using a larger number of noisy samples.
 
 Run all tables and figures from the paper in one script:
 ```bash
