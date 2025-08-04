@@ -4,6 +4,6 @@ postprocessor:
   postprocessor_args:
     APS_score: ross
     lambda_: 0.01
-    noise_magnitude: 0.05
+    noise_magnitude: 0.025
     num_samples: 25
-    score_postprocessor: fdbd 
+    score_postprocessor: fdbd
