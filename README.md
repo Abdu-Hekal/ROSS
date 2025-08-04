@@ -20,6 +20,9 @@ ROSS enhances out-of-distribution (OOD) detection through a synergistic, post-ho
 
 3. Install the package:
    ```bash
+   cd foolbox
+   pip install .
+   cd ..
    pip install .
    ```
 
