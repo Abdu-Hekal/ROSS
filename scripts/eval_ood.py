@@ -54,7 +54,7 @@ parser.add_argument('--wrapper-net',
                     type=str,
                     default=None,
                     choices=['ASCOODNet'])
-parser.add_argument('--plot-score', type=lambda x: x.lower() in ('true','1','yes'), default=True, help='Enable plotting of score histograms (true/false).')
+parser.add_argument('--plot-score', type=lambda x: x.lower() in ('true','1','yes'), default=False, help='Enable plotting of score histograms (true/false).')
 args = parser.parse_args()
 
 root = args.root

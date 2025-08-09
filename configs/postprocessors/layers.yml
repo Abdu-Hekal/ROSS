@@ -1,4 +1,4 @@
 postprocessor:
-  name: ratio
+  name: layers
   APS_mode: False
   postprocessor_args: {} 

@@ -198,7 +198,7 @@ def generate_table4():
 def generate_table5():
     """Generate Table 5: average ROSS postprocessor metrics for ImageNet200 across seeds."""
     labels = ["median", "mad", "cov", "ross"]
-    root = PROJECT_ROOT / "results" / "imagenet200_resnet18_32x32_base_e100_lr0.1_default"
+    root = PROJECT_ROOT / "results" / "imagenet200_resnet18_224x224_base_e90_lr0.1_default"
     # Run eval and parse blocks
     blocks = run_and_parse_blocks("ross", labels, id_data="imagenet200", batch_size=BATCH_SIZE, root=root)
     datasets = ["ssb-hard", "ninco", "inaturalist", "textures", "openImage_o"]
@@ -270,7 +270,7 @@ def generate_table8():
     """Generate Table 8: ROSS-fDBD with varied lambda on ImageNet200."""
     LAMBDAS = [0.005, 0.01, 0.02, 0.05]
     datasets = ["ssb-hard", "ninco", "inaturalist", "textures", "openImage_o"]
-    root = PROJECT_ROOT / "results" / "imagenet200_resnet18_32x32_base_e100_lr0.1_default"
+    root = PROJECT_ROOT / "results" / "imagenet200_resnet18_224x224_base_e90_lr0.1_default"
     bak = backup_config()
     base_cfg = load_yaml(bak)
     table = pd.DataFrame(index=[str(l) for l in LAMBDAS], columns=datasets + ["Avg"])

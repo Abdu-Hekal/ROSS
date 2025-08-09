@@ -70,7 +70,7 @@ download_id_dict = {
     'cifar100_res18_v1.5': '1s-1oNrRtmA0pGefxXJOUVRYpaoAML0C-',
     'imagenet200_res18_v1.5': '1ddVmwc8zmzSjdLUO84EuV4Gz1c7vhIAs',
     'imagenet_res50_v1.5': '15PdDMNRfnJ7f2oxW6lI-Ge4QJJH3Z0Fy',
-    'benchmark_imglist': '1lI1j0_fDDvjIt9JlWAw09X8ks-yrR_H1',
+    'benchmark_imglist': '1XKzBdWCqg3vPoj-D32YixJyJJ0hL63gP',
     'usps': '1KhbWhlFlpFjEIb4wpvW0s9jmXXsHonVl',
     'cifar100': '1PGKheHUsf29leJPPGuXqzLBMwl8qMF8_',
     'cifar10': '1Co32RiiWe16lTaiOU6JMMnyUYS41IlO1',
@@ -133,9 +133,9 @@ def download_dataset(dataset, args):
         print(store_path)
         if not store_path.endswith('/'):
             store_path = store_path + '/'
-        gdown.download(id=download_id_dict[dataset], output=store_path)
-
         file_path = os.path.join(store_path, dataset + '.zip')
+        gdown.download(id=download_id_dict[dataset], output=file_path)
+
         with zipfile.ZipFile(file_path, 'r') as zip_file:
             zip_file.extractall(store_path)
         os.remove(file_path)
@@ -187,10 +187,9 @@ if __name__ == '__main__':
                 store_path = store_path + '/'
             if not os.path.exists(os.path.join(store_path,
                                                'benchmark_imglist')):
+                file_path = os.path.join(store_path, 'benchmark_imglist.zip')
                 gdown.download(id=download_id_dict['benchmark_imglist'],
-                               output=store_path)
-                file_path = os.path.join(args.save_dir[0],
-                                         'benchmark_imglist.zip')
+                               output=file_path)
                 with zipfile.ZipFile(file_path, 'r') as zip_file:
                     zip_file.extractall(store_path)
                 os.remove(file_path)
@@ -218,9 +217,9 @@ if __name__ == '__main__':
 
             for checkpoint in args.checkpoints:
                 if require_download(checkpoint, store_path):
-                    gdown.download(id=download_id_dict[checkpoint],
-                                   output=store_path)
                     file_path = os.path.join(store_path, checkpoint + '.zip')
+                    gdown.download(id=download_id_dict[checkpoint],
+                                   output=file_path)
                     with zipfile.ZipFile(file_path, 'r') as zip_file:
                         zip_file.extractall(store_path)
                     os.remove(file_path)

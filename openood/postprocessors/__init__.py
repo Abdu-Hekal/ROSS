@@ -57,3 +57,4 @@ from .similarity_postprocessor import SimilarityPostprocessor
 from .pro_postprocessor import PROPostprocessor
 from .minmax_postprocessor import MinMaxPostprocessor
 from .ross_postprocessor import ROSSPostprocessor
+from .layers_postprocessor import LayersPostprocessor

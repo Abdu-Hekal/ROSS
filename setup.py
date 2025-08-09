@@ -39,7 +39,10 @@ setuptools.setup(
         'diffdist>=0.1',
         'Cython>=0.29.30',
         'faiss-gpu>=1.7.2',
-        'gdown>=4.7.1',  # 'libmr>=0.1.9'
+        'gdown>=4.7.1', 
+        'libmr>=0.1.9',
+        "numpy==1.24.3",
+        "statsmodels==0.14.0",
         _FB_REQ,
     ],
     classifiers=[

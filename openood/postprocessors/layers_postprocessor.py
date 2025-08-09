@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from .base_postprocessor import BasePostprocessor
 
-class RatioPostprocessor(BasePostprocessor):
+class LayersPostprocessor(BasePostprocessor):
     """
     OOD postprocessor computing ratio of feature activation magnitude between layers.
     For a single forward pass, it computes mean absolute activation of each module's output
@@ -13,12 +13,14 @@ class RatioPostprocessor(BasePostprocessor):
         super().__init__(config)
         self.hooks = []
         self.layer_names = []
-        self.outputs = {}
+        self.means = {}
+        self.layer_types = {}
 
     def setup(self, net: nn.Module, id_loader_dict, ood_loader_dict):
         # register hooks on all modules to capture outputs
         for name, module in net.named_modules():
             self.layer_names.append(name)
+            self.layer_types[name] = module.__class__.__name__
             handle = module.register_forward_hook(self._hook(name))
             self.hooks.append(handle)
 
@@ -26,14 +28,14 @@ class RatioPostprocessor(BasePostprocessor):
         def hook(module, inp, output):
             # flatten output and compute mean absolute activation per sample
             f = output.detach().flatten(start_dim=1)  # (batch_size, D)
-            summary = f.abs().mean(dim=1)  # (batch_size,)
-            self.outputs[name] = summary
+            summary = f.abs().mean(dim=1) 
+            self.means[name] = summary
         return hook
 
     @torch.no_grad()
     def postprocess(self, net: nn.Module, data: Any):
         # clear previous outputs
-        self.outputs.clear()
+        self.means.clear()
         # single forward pass
         output = net(data)
         # predicted classes
@@ -44,18 +46,21 @@ class RatioPostprocessor(BasePostprocessor):
         for i in range(len(self.layer_names) - 1):
             name1 = self.layer_names[i]
             name2 = self.layer_names[i + 1]
-            summary1 = self.outputs.get(name1)
-            summary2 = self.outputs.get(name2)
+            summary1 = self.means.get(name1)
+            summary2 = self.means.get(name2)
             if summary1 is None or summary2 is None:
                 raise ValueError(f'Missing output for layer {name1} or {name2}')
             metrics.append(summary2 / (summary1 + eps))
         # append raw output summary for each layer
         for name in self.layer_names:
-            metrics.append(self.outputs[name])
+            metrics.append(self.means[name])
+        signs_tensor = torch.stack(list(self.means.values()), dim=1)  # (batch_size, num_layers)
+        flip_score = signs_tensor.mean(dim=1) 
+        metrics.append(flip_score)
         # build metric labels
         ratio_labels = [f'ratio_l{i+1}_l{i+2}' for i in range(len(self.layer_names) - 1)]
-        raw_labels = [f'output_l{i+1}' for i in range(len(self.layer_names))]
-        labels = ratio_labels + raw_labels
+        raw_labels = [f'output_l{i+1}: {self.layer_types[self.layer_names[i]]}' for i in range(len(self.layer_names))]
+        flip_labels = [f'flip_var']
+        labels = ratio_labels + raw_labels + flip_labels
         self.metric_labels = labels
         return preds, metrics 
-    

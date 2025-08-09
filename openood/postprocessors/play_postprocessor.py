@@ -90,25 +90,24 @@ class PlayPostprocessor(BasePostprocessor):
             var_feat = sum2 / Nf - mu * mu  # (batch_size, D)
             var_summary[name] = var_feat.mean(dim=1)  # (batch_size,)
         metrics5 = [
-            var_summary[self.layer_names[i]] / (var_summary[self.layer_names[i+1]] + eps)
+            var_summary[self.layer_names[i+1]] / (var_summary[self.layer_names[i]] + eps)
             for i in range(len(self.layer_names) - 1)
+        ]
+        metrics6 = [
+            -var_summary[self.layer_names[i]]    
+            for i in range(len(self.layer_names))
         ]
         # Additional variance ratio metrics
         first = self.layer_names[0]
         last = self.layer_names[-1]
-        # ratio of variance between first and last layer
-        metric_full_ratio = var_summary[last] / (var_summary[first] + eps)
         # ratio of variance between input and output
         metric_input_output = (var_input_summary) / (var_summary[last] + eps)
-        # ratio of variance between layer 61 and 63
-        metric_61_63 = var_summary[self.layer_names[60]] / (var_summary[self.layer_names[62]] + eps)
-        # ratio of variance between layer 57 and 63
-        metric_56_63 = var_summary[self.layer_names[56]] / (var_summary[self.layer_names[62]] + eps)
         # collate all ratio metrics
-        metrics = metrics5 + [metric_61_63, metric_56_63, metric_full_ratio, metric_input_output]
+        metrics = metrics5 + metrics6 + [metric_input_output]
         # build labels for each metric
         labels = [f'var_ratio_l{i+1}_l{i+2}' for i in range(len(self.layer_names) - 1)]
-        labels += ['var_ratio_l61_l63', 'var_ratio_l57_l63', f'var_ratio_l1_l{len(self.layer_names)}', 'var_ratio_input_output']
+        labels += [f'var_l{i+1}' for i in range(len(self.layer_names))]
+        labels += ['var_input_output']
         # store metric labels on the postprocessor
         self.metric_labels = labels
         # disable streaming after accumulation

@@ -19,7 +19,8 @@ from openood.postprocessors import (
     AdaScalePostprocessor, IODINPostprocessor, NCIPostprocessor,
     FdbdJacNormPostprocessor, DeepfoolPostprocessor,
     VariancePostprocessor, PlayPostprocessor, SimilarityPostprocessor,
-    RatioPostprocessor, PROPostprocessor, MinMaxPostprocessor, ROSSPostprocessor)
+    LayersPostprocessor,
+    PROPostprocessor, MinMaxPostprocessor, ROSSPostprocessor)
 from openood.utils.config import Config, merge_configs
 
 postprocessors = {
@@ -77,7 +78,7 @@ postprocessors = {
     'variance': VariancePostprocessor,
     'play': PlayPostprocessor,
     'similarity': SimilarityPostprocessor,
-    'ratio': RatioPostprocessor,
+    'layers': LayersPostprocessor,
     'pro': PROPostprocessor,
     'minmax': MinMaxPostprocessor,
     'ross': ROSSPostprocessor,

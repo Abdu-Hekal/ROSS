@@ -58,6 +58,7 @@ from .similarity_postprocessor import SimilarityPostprocessor
 from .adascale_postprocessor import AdaScalePostprocessor
 from .pro_postprocessor import PROPostprocessor
 from .ross_postprocessor import ROSSPostprocessor
+from .layers_postprocessor import LayersPostprocessor
 
 def get_postprocessor(config: Config):
     postprocessors = {
@@ -122,6 +123,7 @@ def get_postprocessor(config: Config):
         'ratio': RatioPostprocessor,
         'pro': PROPostprocessor,
         'ross': ROSSPostprocessor,
+        'layers': LayersPostprocessor,
     }
 
     return postprocessors[config.postprocessor.name](config)
