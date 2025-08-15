@@ -52,9 +52,9 @@ from .jacnorm_postprocessor import JacNormPostprocessor
 from .deepfool_postprocessor import DeepfoolPostprocessor
 from .variance_postprocessor import VariancePostprocessor
 from .play_postprocessor import PlayPostprocessor
-from .ratio_postprocessor import RatioPostprocessor
 from .similarity_postprocessor import SimilarityPostprocessor
 from .pro_postprocessor import PROPostprocessor
 from .minmax_postprocessor import MinMaxPostprocessor
 from .ross_postprocessor import ROSSPostprocessor
 from .layers_postprocessor import LayersPostprocessor
+from .nac_postprocessor import NACPostprocessor

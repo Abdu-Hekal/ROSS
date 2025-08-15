@@ -15,7 +15,7 @@ POST="variance"
 PLOT=false
 
 # define hyperparameter sweeps
-NOISES=(0.01) 
+NOISES=(0.05) 
 NUM_SAMPLES=(25)
 
 # paths to config

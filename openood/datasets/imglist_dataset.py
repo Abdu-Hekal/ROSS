@@ -2,6 +2,7 @@ import ast
 import io
 import logging
 import os
+import time
 
 import torch
 from PIL import Image, ImageFile
@@ -18,6 +19,12 @@ class Convert:
 
     def __call__(self, image):
         return image.convert(self.mode)
+
+from PIL import Image
+def pil_loader(img_str, str='RGB'):
+    with Image.open(img_str) as img:
+        img = img.convert(str)
+    return img
 
 
 class ImglistDataset(BaseDataset):
@@ -45,6 +52,16 @@ class ImglistDataset(BaseDataset):
         self.maxlen = maxlen
         self.dummy_read = dummy_read
         self.dummy_size = dummy_size
+
+        self.samples = []
+        for img_idx in range(len(self.imglist)):
+            line = self.imglist[img_idx].strip('\n')
+            tokens = line.split(' ', 1)
+            if self.data_dir != '' and tokens[0].startswith('/'):
+                raise RuntimeError('image_name starts with "/"')
+            self.samples.append((tokens[0], tokens[1],
+                                 os.path.join(self.data_dir, tokens[0]), tokens))
+
         if dummy_read and dummy_size is None:
             raise ValueError(
                 'if dummy_read is True, should provide dummy_size')
@@ -56,14 +73,8 @@ class ImglistDataset(BaseDataset):
             return min(len(self.imglist), self.maxlen)
 
     def getitem(self, index):
-        line = self.imglist[index].strip('\n')
-        tokens = line.split(' ', 1)
-        image_name, extra_str = tokens[0], tokens[1]
-        if self.data_dir != '' and image_name.startswith('/'):
-            raise RuntimeError('image_name starts with "/"')
-        path = os.path.join(self.data_dir, image_name)
-        sample = dict()
-        sample['image_name'] = image_name
+        image_name, extra_str, path, tokens = self.samples[index]
+        sample = {'image_name': image_name}
         kwargs = {'name': self.name, 'path': path, 'tokens': tokens}
         try:
             # some preprocessor methods require setup
@@ -72,17 +83,20 @@ class ImglistDataset(BaseDataset):
             pass
 
         try:
-            if not self.dummy_read:
-                with open(path, 'rb') as f:
-                    content = f.read()
-                filebytes = content
-                buff = io.BytesIO(filebytes)
             if self.dummy_size is not None:
                 sample['data'] = torch.rand(self.dummy_size)
             else:
-                image = Image.open(buff).convert('RGB')
+                # if not self.dummy_read:
+                #     with open(path, 'rb') as f:
+                #         content = f.read()
+                #     filebytes = content
+                #     buff = io.BytesIO(filebytes)
+                #     image = Image.open(buff).convert('RGB')
+                if not self.dummy_read:
+                    image = pil_loader(path)
                 sample['data'] = self.transform_image(image)
-                sample['data_aux'] = self.transform_aux_image(image)
+                # sample['data_aux'] = self.transform_aux_image(image)
+            sample['label'] = int(extra_str)
             extras = ast.literal_eval(extra_str)
             try:
                 for key, value in extras.items():

@@ -6,4 +6,4 @@ postprocessor:
     lambda_: 0.01
     noise_magnitude: 0.05
     num_samples: 25
-    score_postprocessor: fdbd 
+    score_postprocessor: nac 

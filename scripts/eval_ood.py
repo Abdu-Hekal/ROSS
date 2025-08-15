@@ -50,6 +50,10 @@ parser.add_argument('--batch-size', type=int, default=100)
 parser.add_argument('--save-csv', action='store_true')
 parser.add_argument('--save-score', action='store_true')
 parser.add_argument('--fsood', action='store_true')
+parser.add_argument('--aps', action='store_true')
+parser.add_argument('--valid-num', type=int, default=5000)
+parser.add_argument('--use_cache', action='store_true')
+parser.add_argument('--layer-names', default=['avgpool'], nargs="*", type=str, help="intr layers")
 parser.add_argument('--wrapper-net',
                     type=str,
                     default=None,
@@ -84,7 +88,7 @@ if len(glob(os.path.join(root, 's*'))) == 0:
 
 # iterate through training runs
 all_metrics = []
-for subfolder in sorted(glob(os.path.join(root, 's*'))):
+for i, subfolder in enumerate(sorted(glob(os.path.join(root, 's*')))):
     # load pre-setup postprocessor if exists
     if os.path.isfile(
             os.path.join(subfolder, 'postprocessors',
@@ -151,11 +155,21 @@ for subfolder in sorted(glob(os.path.join(root, 's*'))):
     net.cuda()
     net.eval()
 
+    if postprocessor_name == "nac":
+        postpc_kwargs = {"valid_num": args.valid_num,
+                         "layer_names": args.layer_names,
+                         "aps": args.aps,
+                         "log_dir": f"logs/resnet18_{args.id_data}_{args.valid_num}"}
+        config_root = os.path.join(ROOT_DIR, 'configs/postprocessors', 'nac', 'resnet')
+    else:
+        postpc_kwargs = {}
+        config_root = os.path.join(ROOT_DIR, 'configs')
+
     evaluator = Evaluator(
         net,
         id_name=args.id_data,  # the target ID dataset
         data_root=os.path.join(ROOT_DIR, 'data'),
-        config_root=os.path.join(ROOT_DIR, 'configs'),
+        config_root=config_root,
         preprocessor=None,  # default preprocessing
         postprocessor_name=postprocessor_name,
         postprocessor=
@@ -163,17 +177,20 @@ for subfolder in sorted(glob(os.path.join(root, 's*'))):
         batch_size=args.
         batch_size,  # for certain methods the results can be slightly affected by batch size
         shuffle=False,
-        num_workers=8)
+        num_workers=8,
+        cached_dir=os.path.join("./cache", args.id_data, "resnet18", f"s{i}"),
+        use_cache=args.use_cache,
+        **postpc_kwargs)
 
     # load pre-computed scores if exist
-    if os.path.isfile(
-            os.path.join(subfolder, 'scores', f'{postprocessor_name}.pkl')):
-        with open(
-                os.path.join(subfolder, 'scores', f'{postprocessor_name}.pkl'),
-                'rb') as f:
-            scores = pickle.load(f)
-        update(evaluator.scores, scores)
-        print('Loaded pre-computed scores from file.')
+    # if os.path.isfile(
+    #         os.path.join(subfolder, 'scores', f'{postprocessor_name}.pkl')):
+    #     with open(
+    #             os.path.join(subfolder, 'scores', f'{postprocessor_name}.pkl'),
+    #             'rb') as f:
+    #         scores = pickle.load(f)
+    #     update(evaluator.scores, scores)
+    #     print('Loaded pre-computed scores from file.')
 
     # save the postprocessor for future reuse
     # if hasattr(evaluator.postprocessor, 'setup_flag'

@@ -50,6 +50,13 @@ EPSILONS = [
 OBJECTIVES = [('min', 'PGD-Min'), ('max', 'PGD-Max')]
 
 
+def _format_avg_fpr_auroc(df: pd.DataFrame) -> str:
+    """Return formatted mean of FPR@95 and AUROC columns which are strings like 'xx.xx ± yy.yy'."""
+    fpr_mean = df["FPR@95"].astype(str).str.split("±").str[0].astype(float).mean()
+    auroc_mean = df["AUROC"].astype(str).str.split("±").str[0].astype(float).mean()
+    return f"{fpr_mean:.2f}/{auroc_mean:.2f}"
+
+
 def generate_table1():
     """Generate Table 1: average ROSS postprocessor metrics across seeds."""
     labels = ["median", "mad", "cov", "ross"]
@@ -81,7 +88,7 @@ def generate_table2():
     for disp, tag in BASE_PPS:
         run_eval_ood(tag, ID_DATA, BATCH_SIZE)
         df = parse_csv_skiprows(str(RESULTS_ROOT / 'ood' / f"{tag}.csv"), skiprows=1, drop_datasets=['nearood','farood'])
-        results.at[disp, 'No Attack'] = f"{df['FPR@95'].mean():.2f}/{df['AUROC'].mean():.2f}"
+        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
 
     # No attack: ROSS variants
     cfg = load_yaml(ROSS_CFG_PATH)
@@ -90,7 +97,7 @@ def generate_table2():
         save_yaml(cfg, ROSS_CFG_PATH)
         run_eval_ood('ross', ID_DATA, BATCH_SIZE)
         df = parse_csv_skiprows(str(RESULTS_ROOT / 'ood' / 'ross.csv'), skiprows=1, drop_datasets=['nearood','farood'])
-        results.at[disp, 'No Attack'] = f"{df['FPR@95'].mean():.2f}/{df['AUROC'].mean():.2f}"
+        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
     restore_config(bak_cfg)
 
     # Attacks
@@ -114,7 +121,7 @@ def generate_table2():
                     skiprows=1,
                     drop_datasets=['nearood','farood']
                 )
-                results.at[disp, f"{eps}_{lbl}"] = f"{df['FPR@95'].mean():.2f}/{df['AUROC'].mean():.2f}"
+                results.at[disp, f"{eps}_{lbl}"] = _format_avg_fpr_auroc(df)
 
         if is_ross:
             restore_config(bak2)
@@ -140,7 +147,7 @@ def generate_table3():
     for disp, tag in BASE_PPS:
         run_eval_ood(tag, id_data="cifar100", batch_size=BATCH_SIZE, root=root)
         df = parse_csv_skiprows(str(root / 'ood' / f"{tag}.csv"), skiprows=1, drop_datasets=['nearood','farood'])
-        results.at[disp, 'No Attack'] = f"{df['FPR@95'].mean():.2f}/{df['AUROC'].mean():.2f}"
+        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
 
     # no attack: ROSS variants
     cfg = load_yaml(ROSS_CFG_PATH)
@@ -149,7 +156,7 @@ def generate_table3():
         save_yaml(cfg, ROSS_CFG_PATH)
         run_eval_ood('ross', id_data="cifar100", batch_size=BATCH_SIZE, root=root)
         df = parse_csv_skiprows(str(root / 'ood' / 'ross.csv'), skiprows=1, drop_datasets=['nearood','farood'])
-        results.at[disp, 'No Attack'] = f"{df['FPR@95'].mean():.2f}/{df['AUROC'].mean():.2f}"
+        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
     restore_config(bak_cfg)
 
     # attacks
@@ -169,7 +176,7 @@ def generate_table3():
                 attack_base = pp_call in ['ross','pro','odin']
                 run_attack_ood(pp_call, eps_val, obj, attack_base=attack_base, id_data="cifar100", batch_size=BATCH_SIZE, root=root)
                 df = parse_csv_skiprows(str(root / 'attack_ood' / f"{pp_call}_LinfPGD.csv"), skiprows=1, drop_datasets=['nearood','farood'])
-                results.at[disp, f"{eps}_{lbl}"] = f"{df['FPR@95'].mean():.2f}/{df['AUROC'].mean():.2f}"
+                results.at[disp, f"{eps}_{lbl}"] = _format_avg_fpr_auroc(df)
         if is_ross:
             restore_config(bak2)
 

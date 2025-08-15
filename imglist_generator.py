@@ -1,42 +1,53 @@
 import os
-'''
-path="./data/images_classic/cinic/valid"
-save_path="./data/benchmark_imglist/cifar10/val_cinic10.txt"
-prefix="cinic/valid/"
-category=["airplane","automobile","bird","cat","deer","dog","frog","horse","ship","truck"]
-with open(save_path,'a') as f:
-    for name in category:
-        label=category.index(name)
-        sub_path=path+'/'+name
-        files=os.listdir(sub_path)
-        for file in files:
-            line=prefix+name+'/'+file+' '+str(label)+'\n'
-            f.write(line)
-    f.close()
-'''
+import argparse
+import numpy as np
+from collections import defaultdict
 
-path = './data/images_classic/cifar100c'
-save_path = './data/benchmark_imglist/cifar100/test_cifar100c.txt'
-prefix = 'cifar100c/'
-files = os.listdir(path)
-with open(save_path, 'a') as f:
-    for file in files:
-        splits = file.split('_')
-        label = (splits[1].split('.'))[0]
-        line = prefix + file + ' ' + label + '\n'
-        f.write(line)
-    f.close()
-'''
-path="./data/images_largescale/imagenet_v2"
-save_path="./data/benchmark_imglist/imagenet/test_imagenetv2.txt"
-prefix="imagenet_v2/"
-with open(save_path,'a') as f:
-    for i in range(0,1000):
-        label=str(i)
-        sub_path=path+'/'+label
-        files=os.listdir(sub_path)
-        for file in files:
-            line=prefix+label+'/'+file+' '+label+'\n'
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset', required=True)
+parser.add_argument('--root', default="./data/benchmark_imglist")
+parser.add_argument('--split_num', default=1000, type=int, help="number of training data samples for sanity check")
+parser.add_argument('--seed', default=1, type=int)
+args = parser.parse_args()
+
+if args.dataset == "cifar10":
+    fname = "train_cifar10.txt"
+elif args.dataset == "cifar100":
+    fname = "train_cifar100.txt"
+elif args.dataset == "imagenet":
+    fname = "train_imagenet.txt"
+elif args.dataset == "imagenet200":
+    fname = "train_imagenet200.txt"
+else:
+    raise ValueError(args.dataset)
+
+fpath = os.path.join(args.root, args.dataset, fname)
+cls_to_imgs = defaultdict(list)
+with open(fpath, 'r') as imgfile:
+    imglist = imgfile.readlines()
+    for img_idx in range(len(imglist)):
+        line = imglist[img_idx].strip('\n')
+        tokens = line.split(' ', 1)
+        if tokens[0].startswith('/'):
+            raise RuntimeError('image_name starts with "/"')
+        _, label = tokens
+        cls_to_imgs[label].append(imglist[img_idx])
+
+# keep class balance
+num_each_cls = int(args.split_num / len(cls_to_imgs))
+sub_imgs, main_imgs = [], []
+for cls in cls_to_imgs:
+    imgs = cls_to_imgs[cls]
+    np.random.RandomState(args.seed).shuffle(imgs)
+    sub_imgs += imgs[:num_each_cls]
+    main_imgs += imgs[num_each_cls:]
+
+for name, img_tokens in zip(["sub_" + fname, "main_" + fname],
+                            [sub_imgs, main_imgs]):
+    fpath = os.path.join(args.root, args.dataset, name)
+    print("write lists to: ", fpath)
+    print("num of images: ", len(img_tokens))
+    with open(fpath, 'w') as f:
+        for line in img_tokens:
             f.write(line)
-    f.close()
-'''
+        f.close()

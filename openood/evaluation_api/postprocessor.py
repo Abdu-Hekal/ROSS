@@ -20,7 +20,7 @@ from openood.postprocessors import (
     FdbdJacNormPostprocessor, DeepfoolPostprocessor,
     VariancePostprocessor, PlayPostprocessor, SimilarityPostprocessor,
     LayersPostprocessor,
-    PROPostprocessor, MinMaxPostprocessor, ROSSPostprocessor)
+    PROPostprocessor, MinMaxPostprocessor, ROSSPostprocessor, NACPostprocessor)
 from openood.utils.config import Config, merge_configs
 
 postprocessors = {
@@ -82,6 +82,7 @@ postprocessors = {
     'pro': PROPostprocessor,
     'minmax': MinMaxPostprocessor,
     'ross': ROSSPostprocessor,
+    'nac': NACPostprocessor,
 }
 
 link_prefix = 'https://raw.githubusercontent.com/Jingkang50/OpenOOD/main/configs/postprocessors/'
@@ -89,8 +90,11 @@ link_prefix = 'https://raw.githubusercontent.com/Jingkang50/OpenOOD/main/configs
 
 def get_postprocessor(config_root: str, postprocessor_name: str,
                       id_data_name: str):
-    postprocessor_config_path = os.path.join(config_root, 'postprocessors',
-                                             f'{postprocessor_name}.yml')
+    if postprocessor_name == "nac":
+        postprocessor_config_path = os.path.join(config_root, f'{postprocessor_name}_{id_data_name}.yml')
+    else:
+        postprocessor_config_path = os.path.join(config_root, 'postprocessors',
+                                                 f'{postprocessor_name}.yml')
     if not os.path.exists(postprocessor_config_path):
         os.makedirs(os.path.dirname(postprocessor_config_path), exist_ok=True)
         urllib.request.urlretrieve(link_prefix + f'{postprocessor_name}.yml',

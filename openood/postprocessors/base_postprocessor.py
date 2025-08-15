@@ -13,7 +13,7 @@ class BasePostprocessor:
     def __init__(self, config):
         self.config = config
 
-    def setup(self, net: nn.Module, id_loader_dict, ood_loader_dict):
+    def setup(self, net: nn.Module, id_loader_dict, ood_loader_dict, **kwargs):
         pass
 
     @torch.no_grad()

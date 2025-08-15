@@ -34,6 +34,10 @@ class Evaluator:
         shuffle: bool = False,
         num_workers: int = 4,
         robustbench=False,
+        fsood: bool = False,
+        cached_dir: str = "./cache",
+        use_cache: bool = False,
+        **postpc_kwargs
     ) -> None:
         """A unified, easy-to-use API for evaluating (most) discriminative OOD
         detection methods.
@@ -106,10 +110,27 @@ class Evaluator:
         loader_kwargs = {
             'batch_size': batch_size,
             'shuffle': shuffle,
-            'num_workers': num_workers
+            'num_workers': num_workers,
+            'pin_memory': True,
         }
-        dataloader_dict = get_id_ood_dataloader(id_name, data_root,
-                                                preprocessor, **loader_kwargs)
+        # make sure to only pass extra kwargs to nac postprocessor
+        if postprocessor_name == 'nac':
+            dataloader_dict = get_id_ood_dataloader(
+                id_name,
+                data_root,
+                preprocessor,
+                fsood=fsood,
+                cached_dir=cached_dir,
+                use_cache=use_cache,
+                **loader_kwargs,
+            )
+        else:
+            dataloader_dict = get_id_ood_dataloader(
+                id_name,
+                data_root,
+                preprocessor,
+                **loader_kwargs,
+            )
 
         # wrap base model to work with certain postprocessors
         if postprocessor_name == 'react':
@@ -124,13 +145,29 @@ class Evaluator:
             net = AdaScaleLNet(net)
 
         # postprocessor setup
-        postprocessor.setup(net, dataloader_dict['id'], dataloader_dict['ood'])
+        if postprocessor_name == 'nac':
+            postprocessor.setup(
+                net,
+                dataloader_dict['id'],
+                dataloader_dict['ood'],
+                use_cache=use_cache,
+                id_name=id_name,
+                **postpc_kwargs,
+            )
+        else:
+            postprocessor.setup(
+                net,
+                dataloader_dict['id'],
+                dataloader_dict['ood'],
+            )
 
         self.id_name = id_name
         self.net = net
+        self.use_cache = use_cache
         self.preprocessor = preprocessor
         self.postprocessor = postprocessor
         self.dataloader_dict = dataloader_dict
+        self.postprocessor_name = postprocessor_name
         self.metrics = {
             'id_acc': None,
             'csid_acc': None,
@@ -191,6 +228,14 @@ class Evaluator:
         return all_preds, all_labels
 
     def eval_acc(self, data_name: str = 'id') -> float:
+        # when using cached features, we cannot run classifier inference on raw images
+        if hasattr(self, 'use_cache') and self.use_cache:
+            key = 'id_acc' if data_name == 'id' else ('csid_acc' if data_name == 'csid' else None)
+            if key is None:
+                raise ValueError(f'Unknown data name {data_name}')
+            if self.metrics[key] is None:
+                self.metrics[key] = float('nan')
+            return self.metrics[key]
         if data_name == 'id':
             if self.metrics['id_acc'] is not None:
                 return self.metrics['id_acc']
@@ -425,8 +470,10 @@ class Evaluator:
             hyperparam_list, count)
 
         final_index = None
-        for i, hyperparam in enumerate(hyperparam_combination):
+        for i, hyperparam in tqdm(enumerate(hyperparam_combination)):
             self.postprocessor.set_hyperparam(hyperparam)
+            if self.postprocessor_name == 'nac':
+                self.postprocessor.build_nac(self.net, reload=True, prefix=self.id_name)
 
             id_pred, id_conf, id_gt = self.postprocessor.inference(
                 self.net, self.dataloader_dict['id']['val'])

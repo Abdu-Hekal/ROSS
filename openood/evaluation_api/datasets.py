@@ -4,6 +4,7 @@ import zipfile
 
 from torch.utils.data import DataLoader
 import torchvision as tvs
+
 if tvs.__version__ >= '0.13':
     tvs_new = True
 else:
@@ -29,7 +30,15 @@ DATA_INFO = {
             'test': {
                 'data_dir': 'images_classic/',
                 'imglist_path': 'benchmark_imglist/cifar10/test_cifar10.txt'
-            }
+            },
+            'sub_train': {
+                'data_dir': 'images_classic/',
+                'imglist_path': 'benchmark_imglist/cifar10/sub_train_cifar10.txt'
+            },
+            'main_train': {
+                'data_dir': 'images_classic/',
+                'imglist_path': 'benchmark_imglist/cifar10/main_train_cifar10.txt'
+            },
         },
         'csid': {
             'datasets': ['cifar10c'],
@@ -52,7 +61,7 @@ DATA_INFO = {
                 'cifar100': {
                     'data_dir': 'images_classic/',
                     'imglist_path':
-                    'benchmark_imglist/cifar10/test_cifar100.txt'
+                        'benchmark_imglist/cifar10/test_cifar100.txt'
                 },
                 'tin': {
                     'data_dir': 'images_classic/',
@@ -72,12 +81,12 @@ DATA_INFO = {
                 'texture': {
                     'data_dir': 'images_classic/',
                     'imglist_path':
-                    'benchmark_imglist/cifar10/test_texture.txt'
+                        'benchmark_imglist/cifar10/test_texture.txt'
                 },
                 'places365': {
                     'data_dir': 'images_classic/',
                     'imglist_path':
-                    'benchmark_imglist/cifar10/test_places365.txt'
+                        'benchmark_imglist/cifar10/test_places365.txt'
                 },
             }
         }
@@ -96,7 +105,16 @@ DATA_INFO = {
             'test': {
                 'data_dir': 'images_classic/',
                 'imglist_path': 'benchmark_imglist/cifar100/test_cifar100.txt'
-            }
+            },
+            'sub_train': {
+                'data_dir': 'images_classic/',
+                'imglist_path': 'benchmark_imglist/cifar100/sub_train_cifar100.txt'
+            },
+            'main_train': {
+                'data_dir': 'images_classic/',
+                'imglist_path': 'benchmark_imglist/cifar100/main_train_cifar100.txt'
+            },
+
         },
         'csid': {
             'datasets': [],
@@ -111,7 +129,7 @@ DATA_INFO = {
                 'cifar10': {
                     'data_dir': 'images_classic/',
                     'imglist_path':
-                    'benchmark_imglist/cifar100/test_cifar10.txt'
+                        'benchmark_imglist/cifar100/test_cifar10.txt'
                 },
                 'tin': {
                     'data_dir': 'images_classic/',
@@ -131,12 +149,12 @@ DATA_INFO = {
                 'texture': {
                     'data_dir': 'images_classic/',
                     'imglist_path':
-                    'benchmark_imglist/cifar100/test_texture.txt'
+                        'benchmark_imglist/cifar100/test_texture.txt'
                 },
                 'places365': {
                     'data_dir': 'images_classic/',
                     'imglist_path':
-                    'benchmark_imglist/cifar100/test_places365.txt'
+                        'benchmark_imglist/cifar100/test_places365.txt'
                 }
             },
         }
@@ -146,82 +164,91 @@ DATA_INFO = {
         'id': {
             'train': {
                 'data_dir':
-                'images_largescale/',
+                    'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet200/train_imagenet200.txt'
+                    'benchmark_imglist/imagenet200/train_imagenet200.txt'
             },
             'val': {
                 'data_dir': 'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet200/val_imagenet200.txt'
+                    'benchmark_imglist/imagenet200/val_imagenet200.txt'
             },
             'test': {
                 'data_dir':
-                'images_largescale/',
+                    'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet200/test_imagenet200.txt'
-            }
+                    'benchmark_imglist/imagenet200/test_imagenet200.txt'
+            },
+            'sub_train': {
+                'data_dir': 'images_largescale/',
+                'imglist_path': 'benchmark_imglist/imagenet200/sub_train_imagenet200.txt'
+            },
+            'main_train': {
+                'data_dir': 'images_largescale/',
+                'imglist_path': 'benchmark_imglist/imagenet200/main_train_imagenet200.txt'
+            },
+
         },
         'csid': {
             'datasets': ['imagenet_v2', 'imagenet_c', 'imagenet_r'],
             'imagenet_v2': {
                 'data_dir':
-                'images_largescale/',
+                    'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet200/test_imagenet200_v2.txt'
+                    'benchmark_imglist/imagenet200/test_imagenet200_v2.txt'
             },
             'imagenet_c': {
                 'data_dir':
-                'images_largescale/',
+                    'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet200/test_imagenet200_c.txt'
+                    'benchmark_imglist/imagenet200/test_imagenet200_c.txt'
             },
             'imagenet_r': {
                 'data_dir':
-                'images_largescale/',
+                    'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet200/test_imagenet200_r.txt'
+                    'benchmark_imglist/imagenet200/test_imagenet200_r.txt'
             },
         },
         'ood': {
             'val': {
                 'data_dir': 'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet200/val_openimage_o.txt'
+                    'benchmark_imglist/imagenet200/val_openimage_o.txt'
             },
             'near': {
                 'datasets': ['ssb_hard', 'ninco'],
                 'ssb_hard': {
                     'data_dir':
-                    'images_largescale/',
+                        'images_largescale/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet200/test_ssb_hard.txt'
+                        'benchmark_imglist/imagenet200/test_ssb_hard.txt'
                 },
                 'ninco': {
                     'data_dir': 'images_largescale/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet200/test_ninco.txt'
+                        'benchmark_imglist/imagenet200/test_ninco.txt'
                 }
             },
             'far': {
                 'datasets': ['inaturalist', 'textures', 'openimage_o'],
                 'inaturalist': {
                     'data_dir':
-                    'images_largescale/',
+                        'images_largescale/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet200/test_inaturalist.txt'
+                        'benchmark_imglist/imagenet200/test_inaturalist.txt'
                 },
                 'textures': {
                     'data_dir':
-                    'images_classic/',
+                        'images_classic/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet200/test_textures.txt'
+                        'benchmark_imglist/imagenet200/test_textures.txt'
                 },
                 'openimage_o': {
                     'data_dir':
-                    'images_largescale/',
+                        'images_largescale/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet200/test_openimage_o.txt'
+                        'benchmark_imglist/imagenet200/test_openimage_o.txt'
                 },
             },
         }
@@ -240,44 +267,47 @@ DATA_INFO = {
             'test': {
                 'data_dir': 'images_largescale/',
                 'imglist_path': 'benchmark_imglist/imagenet/test_imagenet.txt'
-            }
+            },
+            'sub_train': {
+                'data_dir': 'images_largescale/',
+                'imglist_path': 'benchmark_imglist/imagenet/sub_train_imagenet.txt'
+            },
+            'main_train': {
+                'data_dir': 'images_largescale/',
+                'imglist_path': 'benchmark_imglist/imagenet/main_train_imagenet.txt'
+            },
+
         },
         'csid': {
-            'datasets':
-            ['imagenet_v2', 'imagenet_c', 'imagenet_r', 'imagenet_es'],
+            'datasets': ['imagenet_v2', 'imagenet_c', 'imagenet_r'],
             'imagenet_v2': {
                 'data_dir': 'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet/test_imagenet_v2.txt'
+                    'benchmark_imglist/imagenet/test_imagenet_v2.txt'
             },
             'imagenet_c': {
                 'data_dir': 'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet/test_imagenet_c.txt'
+                    'benchmark_imglist/imagenet/test_imagenet_c.txt'
             },
             'imagenet_r': {
                 'data_dir': 'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet/test_imagenet_r.txt'
-            },
-            'imagenet_es': {
-                'data_dir': 'images_largescale/',
-                'imglist_path':
-                'benchmark_imglist/imagenet/test_imagenet_es.txt'
+                    'benchmark_imglist/imagenet/test_imagenet_r.txt'
             },
         },
         'ood': {
             'val': {
                 'data_dir': 'images_largescale/',
                 'imglist_path':
-                'benchmark_imglist/imagenet/val_openimage_o.txt'
+                    'benchmark_imglist/imagenet/val_openimage_o.txt'
             },
             'near': {
                 'datasets': ['ssb_hard', 'ninco'],
                 'ssb_hard': {
                     'data_dir': 'images_largescale/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet/test_ssb_hard.txt'
+                        'benchmark_imglist/imagenet/test_ssb_hard.txt'
                 },
                 'ninco': {
                     'data_dir': 'images_largescale/',
@@ -288,20 +318,20 @@ DATA_INFO = {
                 'datasets': ['inaturalist', 'textures', 'openimage_o'],
                 'inaturalist': {
                     'data_dir':
-                    'images_largescale/',
+                        'images_largescale/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet/test_inaturalist.txt'
+                        'benchmark_imglist/imagenet/test_inaturalist.txt'
                 },
                 'textures': {
                     'data_dir': 'images_classic/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet/test_textures.txt'
+                        'benchmark_imglist/imagenet/test_textures.txt'
                 },
                 'openimage_o': {
                     'data_dir':
-                    'images_largescale/',
+                        'images_largescale/',
                     'imglist_path':
-                    'benchmark_imglist/imagenet/test_openimage_o.txt'
+                        'benchmark_imglist/imagenet/test_openimage_o.txt'
                 },
             },
         }
@@ -327,8 +357,7 @@ download_id_dict = {
     'imagenet_v2': '1akg2IiE22HcbvTBpwXQoD7tgfPCdkoho',
     'imagenet_r': '1EzjMN2gq-bVV7lg-MEAdeuBuz-7jbGYU',
     'imagenet_c': '1JeXL9YH4BO8gCJ631c5BHbaSsl-lekHt',
-    'imagenet_es': '1ATz11vKmPqyzfEaEDRaPTF9TXiC244sw',
-    'benchmark_imglist': '1lI1j0_fDDvjIt9JlWAw09X8ks-yrR_H1'
+    'benchmark_imglist': '1XKzBdWCqg3vPoj-D32YixJyJJ0hL63gP'
 }
 
 dir_dict = {
@@ -348,23 +377,22 @@ dir_dict = {
         'imagenet_v2',
         'imagenet_c',
         'imagenet_r',
-        'imagenet_es',
     ],
     'images_medical/': ['actmed', 'bimcv', 'ct', 'hannover', 'xraybone'],
 }
 
 benchmarks_dict = {
     'cifar10':
-    ['cifar10', 'cifar100', 'tin', 'mnist', 'svhn', 'texture', 'places365'],
+        ['cifar10', 'cifar100', 'tin', 'mnist', 'svhn', 'texture', 'places365'],
     'cifar100':
-    ['cifar100', 'cifar10', 'tin', 'mnist', 'svhn', 'texture', 'places365'],
+        ['cifar100', 'cifar10', 'tin', 'mnist', 'svhn', 'texture', 'places365'],
     'imagenet200': [
         'imagenet_1k', 'ssb_hard', 'ninco', 'inaturalist', 'texture',
         'openimage_o', 'imagenet_v2', 'imagenet_c', 'imagenet_r'
     ],
     'imagenet': [
         'imagenet_1k', 'ssb_hard', 'ninco', 'inaturalist', 'texture',
-        'openimage_o', 'imagenet_v2', 'imagenet_c', 'imagenet_r', 'imagenet_es'
+        'openimage_o', 'imagenet_v2', 'imagenet_c', 'imagenet_r'
     ],
 }
 
@@ -419,7 +447,34 @@ def data_setup(data_root, id_data_name):
         download_dataset(dataset, data_root)
 
 
-def get_id_ood_dataloader(id_name, data_root, preprocessor, **loader_kwargs):
+from openood.postprocessors.nac.utils import load_statistic
+
+
+def craft_loader(fname, cache_dir="./cache/imagenet/vit-b-16", batch_size=128, **kwargs):
+    data_dict = {}
+    cached_states = load_statistic(cache_dir, fname)
+    for key in cached_states:
+        try:
+            if len(cached_states[key]) == 3:
+                raw_state, flags, kl_state = cached_states[key]
+                loader_len = int(len(raw_state) / batch_size) if len(raw_state) > batch_size else 1
+                data_dict[key] = list(zip(raw_state.chunk(loader_len), flags.chunk(loader_len),
+                                          kl_state.chunk(loader_len)))
+            else:
+                raw_state, flags = cached_states[key]
+                loader_len = int(len(raw_state) / batch_size) if len(raw_state) > batch_size else 1
+                data_dict[key] = list(zip(raw_state.chunk(loader_len), flags.chunk(loader_len),
+                                          [None] * loader_len))
+            # print(len(raw_state), loader_len)
+        except:
+            data_dict[key] = cached_states[key]
+    return data_dict
+
+
+def get_id_ood_dataloader(id_name, data_root, preprocessor,
+                          fsood=False, use_cache=False,
+                          cached_dir="./cache/imagenet/vit-b-16",
+                          **loader_kwargs):
     if 'imagenet' in id_name:
         if tvs_new:
             if isinstance(preprocessor,
@@ -453,69 +508,86 @@ def get_id_ood_dataloader(id_name, data_root, preprocessor, **loader_kwargs):
     # id
     sub_dataloader_dict = {}
     for split in data_info['id'].keys():
-        dataset = ImglistDataset(
-            name='_'.join((id_name, split)),
-            imglist_pth=os.path.join(data_root,
-                                     data_info['id'][split]['imglist_path']),
-            data_dir=os.path.join(data_root,
-                                  data_info['id'][split]['data_dir']),
-            num_classes=data_info['num_classes'],
-            preprocessor=preprocessor,
-            data_aux_preprocessor=test_standard_preprocessor)
-        dataloader = DataLoader(dataset, **loader_kwargs)
+        if use_cache:
+            if split == 'train':
+                continue
+            dataloader = craft_loader(f"{id_name}_id_{split}", cached_dir, **loader_kwargs)
+        else:
+            dataset = ImglistDataset(
+                name='_'.join((id_name, split)),
+                imglist_pth=os.path.join(data_root,
+                                         data_info['id'][split]['imglist_path']),
+                data_dir=os.path.join(data_root,
+                                      data_info['id'][split]['data_dir']),
+                num_classes=data_info['num_classes'],
+                preprocessor=preprocessor,
+                data_aux_preprocessor=test_standard_preprocessor)
+            dataloader = DataLoader(dataset, **loader_kwargs)
         sub_dataloader_dict[split] = dataloader
     dataloader_dict['id'] = sub_dataloader_dict
 
     # csid
     sub_dataloader_dict = {}
     for dataset_name in data_info['csid']['datasets']:
-        dataset = ImglistDataset(
-            name='_'.join((id_name, 'csid', dataset_name)),
-            imglist_pth=os.path.join(
-                data_root, data_info['csid'][dataset_name]['imglist_path']),
-            data_dir=os.path.join(data_root,
-                                  data_info['csid'][dataset_name]['data_dir']),
-            num_classes=data_info['num_classes'],
-            preprocessor=preprocessor
-            if dataset_name != 'imagenet_c' else imagenet_c_preprocessor,
-            data_aux_preprocessor=test_standard_preprocessor)
-        dataloader = DataLoader(dataset, **loader_kwargs)
-        sub_dataloader_dict[dataset_name] = dataloader
+        if fsood:
+            if use_cache:
+                dataloader = craft_loader(f"{id_name}_csid_{dataset_name}",
+                                            cached_dir, **loader_kwargs)
+            else:
+                dataset = ImglistDataset(
+                    name='_'.join((id_name, 'csid', dataset_name)),
+                    imglist_pth=os.path.join(
+                        data_root, data_info['csid'][dataset_name]['imglist_path']),
+                    data_dir=os.path.join(data_root,
+                                            data_info['csid'][dataset_name]['data_dir']),
+                    num_classes=data_info['num_classes'],
+                    preprocessor=preprocessor
+                    if dataset_name != 'imagenet_c' else imagenet_c_preprocessor,
+                    data_aux_preprocessor=test_standard_preprocessor)
+                dataloader = DataLoader(dataset, **loader_kwargs)
+            sub_dataloader_dict[dataset_name] = dataloader
     dataloader_dict['csid'] = sub_dataloader_dict
 
     # ood
     dataloader_dict['ood'] = {}
     for split in data_info['ood'].keys():
         split_config = data_info['ood'][split]
-
         if split == 'val':
             # validation set
-            dataset = ImglistDataset(
-                name='_'.join((id_name, 'ood', split)),
-                imglist_pth=os.path.join(data_root,
-                                         split_config['imglist_path']),
-                data_dir=os.path.join(data_root, split_config['data_dir']),
-                num_classes=data_info['num_classes'],
-                preprocessor=preprocessor,
-                data_aux_preprocessor=test_standard_preprocessor)
-            dataloader = DataLoader(dataset, **loader_kwargs)
+            if use_cache:
+                dataloader = craft_loader(f"{id_name}_ood_val", cached_dir, **loader_kwargs)
+            else:
+                dataset = ImglistDataset(
+                    name='_'.join((id_name, 'ood', split)),
+                    imglist_pth=os.path.join(data_root,
+                                             split_config['imglist_path']),
+                    data_dir=os.path.join(data_root, split_config['data_dir']),
+                    num_classes=data_info['num_classes'],
+                    preprocessor=preprocessor,
+                    data_aux_preprocessor=test_standard_preprocessor)
+                dataloader = DataLoader(dataset, **loader_kwargs)
             dataloader_dict['ood'][split] = dataloader
         else:
             # dataloaders for nearood, farood
             sub_dataloader_dict = {}
             for dataset_name in split_config['datasets']:
-                dataset_config = split_config[dataset_name]
-                dataset = ImglistDataset(
-                    name='_'.join((id_name, 'ood', dataset_name)),
-                    imglist_pth=os.path.join(data_root,
-                                             dataset_config['imglist_path']),
-                    data_dir=os.path.join(data_root,
-                                          dataset_config['data_dir']),
-                    num_classes=data_info['num_classes'],
-                    preprocessor=preprocessor,
-                    data_aux_preprocessor=test_standard_preprocessor)
-                dataloader = DataLoader(dataset, **loader_kwargs)
+                if use_cache:
+                    dataloader = craft_loader(f"{id_name}_ood_{split}_{dataset_name}",
+                                              cached_dir, **loader_kwargs)
+                else:
+                    dataset_config = split_config[dataset_name]
+                    dataset = ImglistDataset(
+                        name='_'.join((id_name, 'ood', dataset_name)),
+                        imglist_pth=os.path.join(data_root,
+                                                 dataset_config['imglist_path']),
+                        data_dir=os.path.join(data_root,
+                                              dataset_config['data_dir']),
+                        num_classes=data_info['num_classes'],
+                        preprocessor=preprocessor,
+                        data_aux_preprocessor=test_standard_preprocessor)
+                    dataloader = DataLoader(dataset, **loader_kwargs)
                 sub_dataloader_dict[dataset_name] = dataloader
             dataloader_dict['ood'][split] = sub_dataloader_dict
 
+    # print(dataloader_dict)
     return dataloader_dict

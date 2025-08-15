@@ -34,7 +34,10 @@ class ROSSPostprocessor(BasePostprocessor):
         # --- Base Postprocessor Instantiation ---
         from openood.postprocessors.utils import get_postprocessor
         self.score_pp_name = self.args.score_postprocessor
-        base_pp_config_path = f'configs/postprocessors/{self.score_pp_name}.yml'
+        if self.score_pp_name == "nac":
+            base_pp_config_path = f'configs/postprocessors/nac/resnet/nac_{config.dataset.name}.yml'
+        else:
+            base_pp_config_path = f'configs/postprocessors/{self.score_pp_name}.yml'
         base_pp_config = Config(base_pp_config_path)
         base_pp_config.dataset = config.dataset
         self.base_pp = get_postprocessor(base_pp_config)
@@ -49,6 +52,16 @@ class ROSSPostprocessor(BasePostprocessor):
         # combine hyperparameter sweeps from ROSS config and base postprocessor
         var_sweep = getattr(config.postprocessor, 'postprocessor_sweep', {}) or {}
         base_sweep = getattr(self.base_pp, 'args_dict', {}) or {}
+        # flatten nested hyperparameter sweeps from base postprocessor (e.g., nac)
+        if any(isinstance(v, dict) for v in base_sweep.values()):
+            flattened_base = {}
+            for ln, param_dict in base_sweep.items():
+                if isinstance(param_dict, dict):
+                    for param, vals in param_dict.items():
+                        flattened_base[f"{ln}_{param}"] = vals
+                else:
+                    flattened_base[ln] = param_dict
+            base_sweep = flattened_base
         self.args_dict = {}
         self.args_dict.update(var_sweep)
         self.args_dict.update(base_sweep)
@@ -59,10 +72,10 @@ class ROSSPostprocessor(BasePostprocessor):
             'cov', 'ross',                              
         ]
 
-    def setup(self, net: nn.Module, id_loader_dict, ood_loader_dict):
+    def setup(self, net: nn.Module, id_loader_dict, ood_loader_dict, **kwargs):
         # forward setup to the selected score postprocessor, if supported
         try:
-            self.base_pp.setup(net, id_loader_dict, ood_loader_dict)
+            self.base_pp.setup(net, id_loader_dict, ood_loader_dict, **kwargs)
             print("Base postprocessor setup complete")
         except AttributeError:
             print("Base postprocessor setup failed")

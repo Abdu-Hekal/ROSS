@@ -185,3 +185,7 @@ plots_fdbd/
 # ross
 scripts/ross/figures/
 scripts/ross/tables/
+
+# cache
+cache/ 
+coverage_cache/
