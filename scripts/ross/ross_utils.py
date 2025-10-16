@@ -67,6 +67,11 @@ def parse_csv_skiprows(csv_path, skiprows=1, drop_datasets=None):
     Read a CSV skipping a number of initial rows and optionally dropping specific datasets.
     """
     df = pd.read_csv(csv_path, skiprows=skiprows)
+    # Drop any fully-empty rows
+    df = df.dropna(how='all')
+    # Some generated CSVs may repeat headers within the file; remove such stray header rows
+    if 'dataset' in df.columns:
+        df = df[df['dataset'].astype(str).str.lower() != 'dataset']
     if drop_datasets:
         df = df[~df['dataset'].isin(drop_datasets)]
     return df

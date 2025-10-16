@@ -52,8 +52,11 @@ OBJECTIVES = [('min', 'PGD-Min'), ('max', 'PGD-Max')]
 
 def _format_avg_fpr_auroc(df: pd.DataFrame) -> str:
     """Return formatted mean of FPR@95 and AUROC columns which are strings like 'xx.xx ± yy.yy'."""
-    fpr_mean = df["FPR@95"].astype(str).str.split("±").str[0].astype(float).mean()
-    auroc_mean = df["AUROC"].astype(str).str.split("±").str[0].astype(float).mean()
+    # Coerce errors to NaN in case a stray header or invalid value appears, then drop
+    fpr_vals = pd.to_numeric(df["FPR@95"].astype(str).str.split("±").str[0], errors="coerce").dropna()
+    auroc_vals = pd.to_numeric(df["AUROC"].astype(str).str.split("±").str[0], errors="coerce").dropna()
+    fpr_mean = fpr_vals.mean() if not fpr_vals.empty else float('nan')
+    auroc_mean = auroc_vals.mean() if not auroc_vals.empty else float('nan')
     return f"{fpr_mean:.2f}/{auroc_mean:.2f}"
 
 
@@ -87,17 +90,27 @@ def generate_table2():
     # No attack: baselines
     for disp, tag in BASE_PPS:
         run_eval_ood(tag, ID_DATA, BATCH_SIZE)
-        df = parse_csv_skiprows(str(RESULTS_ROOT / 'ood' / f"{tag}.csv"), skiprows=1, drop_datasets=['nearood','farood'])
-        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
+        ood_csv = RESULTS_ROOT / 'ood' / f"{tag}.csv"
+        if tag == 'pro':
+            # Use only the 'score_pro_v2' block
+            blocks = parse_csv_blocks(str(ood_csv), ['score_pro_v2'])
+            df_block = blocks['score_pro_v2']
+            df_block = df_block[~df_block['dataset'].isin(['nearood','farood'])]
+            results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df_block)
+        else:
+            df = parse_csv_skiprows(str(ood_csv), skiprows=1, drop_datasets=['nearood','farood'])
+            results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
 
-    # No attack: ROSS variants
+    # No attack: ROSS variants (use 'ross' block by default)
     cfg = load_yaml(ROSS_CFG_PATH)
     for disp, base in ROSS_PPS:
         cfg['postprocessor']['postprocessor_args']['score_postprocessor'] = base
         save_yaml(cfg, ROSS_CFG_PATH)
         run_eval_ood('ross', ID_DATA, BATCH_SIZE)
-        df = parse_csv_skiprows(str(RESULTS_ROOT / 'ood' / 'ross.csv'), skiprows=1, drop_datasets=['nearood','farood'])
-        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
+        blocks = parse_csv_blocks(str(RESULTS_ROOT / 'ood' / 'ross.csv'), ['median','mad','cov','ross'])
+        df_block = blocks['ross']
+        df_block = df_block[~df_block['dataset'].isin(['nearood','farood'])]
+        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df_block)
     restore_config(bak_cfg)
 
     # Attacks
@@ -116,12 +129,17 @@ def generate_table2():
             for obj, lbl in OBJECTIVES:
                 attack_base = pp_call in ['ross','pro','odin']
                 run_attack_ood(pp_call, eps_val, obj, attack_base=attack_base)
-                df = parse_csv_skiprows(
-                    str(RESULTS_ROOT / 'attack_ood' / f"{pp_call}_LinfPGD.csv"),
-                    skiprows=1,
-                    drop_datasets=['nearood','farood']
-                )
-                results.at[disp, f"{eps}_{lbl}"] = _format_avg_fpr_auroc(df)
+                atk_csv = RESULTS_ROOT / 'attack_ood' / f"{pp_call}_LinfPGD.csv"
+                if pp_call == 'pro':
+                    blocks = parse_csv_blocks(str(atk_csv), ['score_pro_v2'])
+                    df_block = blocks['score_pro_v2']
+                elif pp_call == 'ross':
+                    blocks = parse_csv_blocks(str(atk_csv), ['median','mad','cov','ross'])
+                    df_block = blocks['ross']
+                else:
+                    df_block = parse_csv_skiprows(str(atk_csv), skiprows=1)
+                df_block = df_block[~df_block['dataset'].isin(['nearood','farood'])]
+                results.at[disp, f"{eps}_{lbl}"] = _format_avg_fpr_auroc(df_block)
 
         if is_ross:
             restore_config(bak2)
@@ -146,17 +164,26 @@ def generate_table3():
     # no attack: baselines
     for disp, tag in BASE_PPS:
         run_eval_ood(tag, id_data="cifar100", batch_size=BATCH_SIZE, root=root)
-        df = parse_csv_skiprows(str(root / 'ood' / f"{tag}.csv"), skiprows=1, drop_datasets=['nearood','farood'])
-        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
+        ood_csv = root / 'ood' / f"{tag}.csv"
+        if tag == 'pro':
+            blocks = parse_csv_blocks(str(ood_csv), ['score_pro_v2'])
+            df_block = blocks['score_pro_v2']
+            df_block = df_block[~df_block['dataset'].isin(['nearood','farood'])]
+            results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df_block)
+        else:
+            df = parse_csv_skiprows(str(ood_csv), skiprows=1, drop_datasets=['nearood','farood'])
+            results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
 
-    # no attack: ROSS variants
+    # no attack: ROSS variants (use 'ross' block)
     cfg = load_yaml(ROSS_CFG_PATH)
     for disp, base in ROSS_PPS:
         cfg['postprocessor']['postprocessor_args']['score_postprocessor'] = base
         save_yaml(cfg, ROSS_CFG_PATH)
         run_eval_ood('ross', id_data="cifar100", batch_size=BATCH_SIZE, root=root)
-        df = parse_csv_skiprows(str(root / 'ood' / 'ross.csv'), skiprows=1, drop_datasets=['nearood','farood'])
-        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df)
+        blocks = parse_csv_blocks(str(root / 'ood' / 'ross.csv'), ['median','mad','cov','ross'])
+        df_block = blocks['ross']
+        df_block = df_block[~df_block['dataset'].isin(['nearood','farood'])]
+        results.at[disp, 'No Attack'] = _format_avg_fpr_auroc(df_block)
     restore_config(bak_cfg)
 
     # attacks
@@ -175,8 +202,17 @@ def generate_table3():
             for obj, lbl in OBJECTIVES:
                 attack_base = pp_call in ['ross','pro','odin']
                 run_attack_ood(pp_call, eps_val, obj, attack_base=attack_base, id_data="cifar100", batch_size=BATCH_SIZE, root=root)
-                df = parse_csv_skiprows(str(root / 'attack_ood' / f"{pp_call}_LinfPGD.csv"), skiprows=1, drop_datasets=['nearood','farood'])
-                results.at[disp, f"{eps}_{lbl}"] = _format_avg_fpr_auroc(df)
+                atk_csv = root / 'attack_ood' / f"{pp_call}_LinfPGD.csv"
+                if pp_call == 'pro':
+                    blocks = parse_csv_blocks(str(atk_csv), ['score_pro_v2'])
+                    df_block = blocks['score_pro_v2']
+                elif pp_call == 'ross':
+                    blocks = parse_csv_blocks(str(atk_csv), ['median','mad','cov','ross'])
+                    df_block = blocks['ross']
+                else:
+                    df_block = parse_csv_skiprows(str(atk_csv), skiprows=1)
+                df_block = df_block[~df_block['dataset'].isin(['nearood','farood'])]
+                results.at[disp, f"{eps}_{lbl}"] = _format_avg_fpr_auroc(df_block)
         if is_ross:
             restore_config(bak2)
 

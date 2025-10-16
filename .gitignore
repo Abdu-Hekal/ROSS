@@ -186,3 +186,6 @@ scripts/ross/tables/
 # cache
 cache/ 
 coverage_cache/
+
+# models
+models/
