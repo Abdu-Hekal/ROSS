@@ -1,4 +1,5 @@
 # ROSS - A Robust OOD Detector via Syngergistic Smoothing
+Accepted in CVPR Findings 2026
 
 ## Overview
 
