@@ -3,7 +3,7 @@ Accepted in CVPR Findings 2026
 
 ## Overview
 
-ROSS enhances out-of-distribution (OOD) detection through a synergistic, post-hoc process. It first smoothes base OOD scores by taking their median across a set of noisy input samples. It then reuses these samples to calculate the Median Absolute Deviation (MAD), using this measure of score instability to better differentiate between in-distribution and OOD inputs. This dual use of noisy samples allows ROSS to achieve strong performance on both clean and robust accuracy benchmarks.
+ROSS enhances out-of-distribution (OOD) detection through a synergistic, post-hoc process. It first smooths base OOD scores by taking their median across a set of noisy input samples. It then reuses these samples to calculate the Median Absolute Deviation (MAD), using this measure of score instability to better differentiate between in-distribution and OOD inputs. This dual use of noisy samples allows ROSS to achieve strong performance on both clean and robust accuracy benchmarks.
 
 ## Installation
 
