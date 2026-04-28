@@ -48,7 +48,7 @@ ROSS enhances out-of-distribution (OOD) detection through a synergistic, post-ho
      imagenet200_resnet18_32x32_base_e100_lr0.1_default/...
    ```
    You may train your own models or download official checkpoints from the OpenOOD releases page:
-   https://github.com/thuml/OpenOOD/releases
+   https://github.com/Jingkang50/OpenOOD/releases
 
 ## Usage
 
